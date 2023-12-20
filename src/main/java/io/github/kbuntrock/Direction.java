@@ -18,4 +18,11 @@ public enum Direction {
 	Direction(final Vecteur direction) {
 		this.direction = direction;
 	}
+
+	public boolean isOppositeXDirection(final Direction other) {
+		if(TR == other || BR == other) {
+			return this == TL || this == BL;
+		}
+		return this == TR || this == BR;
+	}
 }

@@ -27,11 +27,12 @@ public class Team {
 	}
 
 	void readScans(final EScanner in) {
+		savedScans.clear();
+		scans.clear();
 		final int myScanCount = in.nextInt();
 		for(int i = 0; i < myScanCount; i++) {
 			final int scanId = in.nextInt();
 			savedScans.add(scanId);
-			scans.remove(scanId);
 		}
 	}
 

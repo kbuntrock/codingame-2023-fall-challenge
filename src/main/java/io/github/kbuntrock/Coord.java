@@ -28,8 +28,13 @@ public class Coord {
 	}
 
 	Coord add(final Vecteur vecteur) {
+		return add(vecteur, 0, 10000);
+	}
+
+	Coord add(final Vecteur vecteur, final int profondeurMinimale, final int profondeurMaximale) {
 		final double x = Math.max(0, Math.min(this.x + vecteur.x.setScale(0, RoundingMode.HALF_DOWN).longValue(), 10000));
-		final double y = Math.max(0, Math.min(this.y + vecteur.y.setScale(0, RoundingMode.HALF_DOWN).longValue(), 10000));
+		final double y = Math.max(profondeurMinimale,
+			Math.min(this.y + vecteur.y.setScale(0, RoundingMode.HALF_DOWN).longValue(), profondeurMaximale));
 		return new Coord((int) x, (int) y);
 	}
 

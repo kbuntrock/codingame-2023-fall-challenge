@@ -22,8 +22,7 @@ public class Board {
 	Map<Integer, Poisson> poissonsById = new HashMap<>();
 	Collection<Coord> myRadarPos;
 	Collection<Coord> myTrapPos;
-
-	Map<Direction, Integer> hotMap = new HashMap<>();
+	Radar radar = new Radar(this);
 
 	Board() {
 		width = 10000;
@@ -61,7 +60,6 @@ public class Board {
 	void update(final EScanner in) {
 		// Reset poissons
 		poissonsById.values().stream().forEach(Poisson::resetPosition);
-		hotMap.clear();
 
 		// Read new data
 		myTeam.readScore(in);
@@ -89,6 +87,7 @@ public class Board {
 			final Robot robot = myTeam.robotsById.get(droneId);
 			if(robot != null) {
 				robot.scans.add(creatureId);
+				myTeam.scans.add(creatureId);
 			} else {
 				opponentTeam.robotsById.get(droneId).scans.add(creatureId);
 			}
@@ -101,17 +100,7 @@ public class Board {
 			poisson.setPosition(in);
 			poisson.setVitesse(in);
 		}
-		final int radarBlipCount = in.nextInt();
-		for(int i = 0; i < radarBlipCount; i++) {
-			final int droneId = in.nextInt();
-			final int creatureId = in.nextInt();
-			final String radar = in.next();
-			if(!myTeam.robots.get(0).scans.contains(creatureId) && !myTeam.scans.contains(creatureId)) {
-				hotMap.compute(Direction.valueOf(radar), (k, v) -> (v == null) ? 1 : v + 1);
-			}
-
-		}
-
+		radar.init(in);
 	}
 
 	// Update autres ligues

@@ -22,6 +22,19 @@ public abstract class Robot extends Entity {
 		battery = in.nextInt();
 	}
 
+	Direction directionEntity(final Entity entity) {
+		if(pos.x < entity.pos.x && pos.y < entity.pos.y) {
+			return Direction.BR;
+		} else if(pos.x < entity.pos.x && pos.y >= entity.pos.y) {
+			return Direction.TR;
+		} else if(pos.x >= entity.pos.x && pos.y < entity.pos.y) {
+			return Direction.BL;
+		} else if(pos.x >= entity.pos.x && pos.y >= entity.pos.y) {
+			return Direction.TL;
+		}
+		throw new RuntimeException("Direction non gérée");
+	}
+
 	@Override
 	public String toString() {
 		return "Robot{" +

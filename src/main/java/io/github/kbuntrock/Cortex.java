@@ -2,17 +2,99 @@ package io.github.kbuntrock;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Kévin Buntrock
  */
 public class Cortex {
 
+	int profondeurSauvegarde = 500;
+
+	int[][] habitat = new int[][]{{2500, 5000}, {5000, 7500}, {7500, 10000}};
+
 	Board board;
+
+	int especeRecherchee[] = new int[]{2, 2};
+
+	final Radio[] previousRadio = new Radio[]{null, null};
+
+	final boolean[] peutChangerHabitat = new boolean[]{false, false};
 
 
 	public Cortex(final Board board) {
 		this.board = board;
+	}
+
+	public void explorerHabitat() {
+
+		for(int i = 0; i < 2; i++) {
+			final int fi = i;
+			final Robot robot = board.myTeam.robots.get(i);
+
+			final int profondeurMinimale = habitat[especeRecherchee[i]][0];
+			final int profondeurMaximale = habitat[especeRecherchee[i]][1];
+			if(robot.pos.y - profondeurSauvegarde < 0) {
+				if(!peutChangerHabitat[i]) {
+					// Descendre
+					robot.action = Action.move(new Coord(robot.pos.x, robot.pos.y + 600), false);
+					robot.action.message = "Going down for " + especeRecherchee[i];
+				} else {
+					// Remonter
+					robot.action = Action.move(new Coord(robot.pos.x, robot.pos.y - 600), false);
+					robot.action.message = "Going up";
+					// On change d'espèce pour notre prochaine plongée
+					if(peutChangerHabitat[i] && especeRecherchee[i] > 0) {
+						especeRecherchee[i]--;
+						peutChangerHabitat[i] = false;
+						robot.action.message = "pro espece : " + especeRecherchee[i];
+					}
+				}
+			} else {
+				// Exploration
+				peutChangerHabitat[i] = true;
+				final List<Radio> radios = board.radar.filtered(robot.id, especeRecherchee[i]);
+				boolean light = false;
+				Coord visee = null;
+				if(!radios.isEmpty()) {
+
+					if(previousRadio[i] != null) {
+						final Optional<Radio> opt = radios.stream().filter(r -> r.poisson.id == previousRadio[fi].poisson.id).findAny();
+						if(opt.isEmpty()) {
+							previousRadio[i] = null;
+						} else {
+							final Radio currentRadio = opt.get();
+							visee = robot.pos.add(currentRadio.direction.direction, profondeurMinimale, profondeurMaximale);
+							if(previousRadio[i].direction != currentRadio.direction) {
+								// Changement de direction soudain.
+								// On allume la lumière pour voir si on peut le rattraper ?
+								light = true;
+							}
+						}
+					}
+					if(previousRadio[i] == null) {
+						// On essaie de trouver une direction oposée à l'autre robot
+						final Direction directionAutreRobot = robot.directionEntity(board.myTeam.robots.get(1 - i));
+						final Optional<Radio> optRadio = radios.stream().filter(
+							r -> directionAutreRobot.isOppositeXDirection(r.direction)).findAny();
+						if(optRadio.isPresent()) {
+							IO.info("Une radio correspond à la direction opposée au robot " + i + " : " + optRadio.get() + " par rapport à "
+								+ directionAutreRobot);
+						}
+						final Radio currentRadio = optRadio.isPresent() ? optRadio.get() : radios.get(0);
+						visee = robot.pos.add(currentRadio.direction.direction, profondeurMinimale, profondeurMaximale);
+						previousRadio[i] = currentRadio;
+					}
+					robot.action = Action.move(visee, light);
+					robot.action.message = "Exploration " + especeRecherchee[i];
+				} else {
+					// Remonter
+					robot.action = Action.move(new Coord(robot.pos.x, robot.pos.y - 600), false);
+					robot.action.message = "On remonte des profondeurs";
+				}
+			}
+		}
+
 	}
 
 	public Poisson trouverPoissonNonScannePlusProche() {
