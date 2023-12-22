@@ -40,7 +40,7 @@ public class EScanner {
 	}
 
 	public EScanner(final String inputs) {
-		final String[] arrays = inputs.split("->")[1].split("-");
+		final String[] arrays = inputs.split("->")[1].split(";");
 		global = Arrays.stream(arrays[0].split(":")).map(x -> Integer.valueOf(x)).collect(Collectors.toList());
 		turn = Arrays.stream(arrays[1].split(":")).map(x -> {
 			try {
@@ -79,7 +79,7 @@ public class EScanner {
 	public void export() {
 		final StringBuilder sb = new StringBuilder();
 		sb.append(global.stream().map(x -> String.valueOf(x)).collect(Collectors.joining(":")));
-		sb.append("-");
+		sb.append(";");
 		sb.append(turn.stream().map(x -> String.valueOf(x)).collect(Collectors.joining(":")));
 		IO.export(sb.toString());
 	}

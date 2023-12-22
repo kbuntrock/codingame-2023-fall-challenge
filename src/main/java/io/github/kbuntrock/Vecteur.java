@@ -1,34 +1,35 @@
 package io.github.kbuntrock;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * @author Kévin Buntrock
  */
 public class Vecteur {
 
-	BigDecimal x;
+	int x;
 
-	BigDecimal y;
+	int y;
 
 	public Vecteur(final Coord depart, final Coord arrivee) {
 		final Coord coord = arrivee.minus(depart);
-		x = BigDecimal.valueOf(coord.x);
-		y = BigDecimal.valueOf(coord.y);
+		x = coord.x;
+		y = coord.y;
 	}
 
-	public Vecteur(final BigDecimal x, final BigDecimal y) {
+	public Vecteur(final int x, final int y) {
 		this.x = x;
 		this.y = y;
 	}
 
 	public Vecteur adapt(final double distance) {
 
-		final long squaredLenght = (x.longValue() * x.longValue()) + (y.longValue() * y.longValue());
-		final BigDecimal xAxis = BigDecimal.valueOf(x.longValue() * distance / Math.sqrt(squaredLenght));
-		final BigDecimal yAxis = BigDecimal.valueOf(y.longValue() * distance / Math.sqrt(squaredLenght));
+		final long squaredLenght = (x * x) + (y * y);
+		final BigDecimal xAxis = BigDecimal.valueOf(x * distance / Math.sqrt(squaredLenght)).setScale(0, RoundingMode.HALF_DOWN);
+		final BigDecimal yAxis = BigDecimal.valueOf(y * distance / Math.sqrt(squaredLenght)).setScale(0, RoundingMode.HALF_DOWN);
 
-		return new Vecteur(xAxis, yAxis);
+		return new Vecteur(xAxis.intValue(), yAxis.intValue());
 	}
 
 //	public Vecteur normalize() {

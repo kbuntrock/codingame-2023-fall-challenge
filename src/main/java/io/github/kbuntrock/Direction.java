@@ -1,12 +1,10 @@
 package io.github.kbuntrock;
 
-import java.math.BigDecimal;
-
 /**
  * @author Kévin Buntrock
  */
 public enum Direction {
-	T(new Vecteur(BigDecimal.ZERO, BigDecimal.valueOf(600L))),
+	T(new Vecteur(0, 600)),
 	TL(new Vecteur(Coord.NEGATIF, Coord.NEGATIF)),
 	TR(new Vecteur(Coord.POSITIF, Coord.NEGATIF)),
 	BR(new Vecteur(Coord.POSITIF, Coord.POSITIF)),

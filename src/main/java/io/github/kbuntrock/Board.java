@@ -1,6 +1,5 @@
 package io.github.kbuntrock;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,12 +15,8 @@ public class Board {
 	// Updated each turn
 	final Team myTeam = new Team();
 	final Team opponentTeam = new Team();
-	private Cell[][] cells;
-	int myRadarCooldown;
-	int myTrapCooldown;
 	Map<Integer, Poisson> poissonsById = new HashMap<>();
-	Collection<Coord> myRadarPos;
-	Collection<Coord> myTrapPos;
+	Map<Integer, Monstre> monstresById = new HashMap<>();
 	Radar radar = new Radar(this);
 
 	Board() {
@@ -30,36 +25,32 @@ public class Board {
 	}
 
 	Board(final EScanner in) {
-//		width = in.nextInt();
-//		height = in.nextInt();
 		width = 10000;
 		height = 10000;
 
-		//	int creatureCount = in.nextInt();
-//        for (int i = 0; i < creatureCount; i++) {
-//		int creatureId = in.nextInt();
-//		int color = in.nextInt();
-//		int type = in.nextInt();
-//	}
+		initCreatures(in);
+	}
+
+	private void initCreatures(final EScanner in) {
 		final int creatureCount = in.nextInt();
 		for(int i = 0; i < creatureCount; i++) {
-			final Poisson poisson = new Poisson(in);
-			poissonsById.put(poisson.id, poisson);
-//			if(entity.type == EntityType.ALLY_ROBOT) {
-//				myTeam.robots.add(entity);
-//			} else if(entity.type == EntityType.ENEMY_ROBOT) {
-//				opponentTeam.robots.add(entity);
-//			} else if(entity.type == EntityType.RADAR) {
-//				myRadarPos.add(entity.pos);
-//			} else if(entity.type == EntityType.TRAP) {
-//				myTrapPos.add(entity.pos);
-//			}
+			final int id = in.nextInt();
+			final int couleur = in.nextInt();
+			final int espece = in.nextInt();
+			if(espece == -1) {
+				final Monstre monstre = new Monstre(id, null, null, couleur, espece);
+				monstresById.put(monstre.id, monstre);
+			} else {
+				final Poisson poisson = new Poisson(id, null, null, couleur, espece);
+				poissonsById.put(poisson.id, poisson);
+			}
 		}
 	}
 
 	void update(final EScanner in) {
 		// Reset poissons
 		poissonsById.values().stream().forEach(Poisson::resetPosition);
+		//monstresById.values().stream().forEach(Poisson::resetPosition);
 
 		// Read new data
 		myTeam.readScore(in);
@@ -97,49 +88,62 @@ public class Board {
 		for(int i = 0; i < visibleCreatureCount; i++) {
 			final int creatureId = in.nextInt();
 			final Poisson poisson = poissonsById.get(creatureId);
-			poisson.setPosition(in);
-			poisson.setVitesse(in);
+			if(poisson != null) {
+				poisson.setPosition(in);
+				poisson.setVitesse(in);
+			} else {
+				final Monstre monstre = monstresById.get(creatureId);
+				monstre.setPosition(in);
+				monstre.setVitesse(in);
+				monstre.lastSeen = IO.turn;
+				IO.info(
+					"Vitesse monstre " + monstre.id + " calculee : " + monstre.vitesse + " - next position : "
+						+ monstre.prochainePosition + " - pos actuelle : " + monstre.pos);
+			}
 		}
+		updateMonstresNonVisibles();
 		radar.init(in);
 	}
 
-	// Update autres ligues
-//	void update(final Scanner in) {
-//		// Read new data
-//		myTeam.readScore(in);
-//		opponentTeam.readScore(in);
-//		cells = new Cell[height][width];
-//		for(int y = 0; y < height; y++) {
-//			for(int x = 0; x < width; x++) {
-//				cells[y][x] = new Cell(in);
+	private void updateMonstresNonVisibles() {
+		monstresById.values().stream().filter(m -> m.lastSeen < IO.turn).forEach(m -> {
+			if(m.vitesse.x + m.vitesse.y != 0) {
+				final Vecteur v = new Vecteur(m.vitesse.x, m.vitesse.y);
+				v.adapt(Monstre.VITESSE_NON_AGRESSIVE);
+				m.pos = m.pos.add(v, 2500, 10000);
+				m.setVitesse(new Coord(v.x, v.y));
+				IO.info(
+					"On pense que le monstre " + m.id + " est en " + m.pos + " - vitesse " + m.vitesse + " - next pos "
+						+ m.prochainePosition);
+			}
+		});
+	}
+
+	// TODO : à garder si on veut tenter de deviner la mise à jour de la direction d'un monstre via un autre drone
+//	private Coord calculerVitesseMonstre(final Monstre monstre) {
+//		Robot plusProcheRobot = null;
+//		int minDistance = Integer.MAX_VALUE;
+//		for(final Robot robot : myTeam.robots) {
+//			final int distance = robot.pos.squareDistance(monstre.pos);
+//			if(minDistance < distance) {
+//				minDistance = distance;
+//				plusProcheRobot = robot;
 //			}
 //		}
-//		final int entityCount = in.nextInt();
-//		myRadarCooldown = in.nextInt();
-//		myTrapCooldown = in.nextInt();
-//		entitiesById = new HashMap<>();
-//		myRadarPos = new ArrayList<>();
-//		myTrapPos = new ArrayList<>();
-//		for(int i = 0; i < entityCount; i++) {
-//			final Entity entity = new Entity(in);
-//			entitiesById.put(entity.id, entity);
-//			if(entity.type == EntityType.ALLY_ROBOT) {
-//				myTeam.robots.add(entity);
-//			} else if(entity.type == EntityType.ENEMY_ROBOT) {
-//				opponentTeam.robots.add(entity);
-//			} else if(entity.type == EntityType.RADAR) {
-//				myRadarPos.add(entity.pos);
-//			} else if(entity.type == EntityType.TRAP) {
-//				myTrapPos.add(entity.pos);
+//		for(final Robot robot : opponentTeam.robots) {
+//			final int distance = robot.pos.squareDistance(monstre.pos);
+//			if(minDistance < distance) {
+//				minDistance = distance;
+//				plusProcheRobot = robot;
 //			}
 //		}
+//		if(minDistance <= 640000) {
+//			IO.info("monstre " + monstre.id + " dans un faisceau lumineux");
+//			// On est en présence d'un robot dans un faisceau lumineux
+//			return plusProcheRobot.pos.minus(monstre.pos);
+//		}
+//		// Le monstre n'est pas dans un faisceau lumineux, sa vitesse ne change pas
+//		return monstre.vitesse;
 //	}
 
-	boolean cellExist(final Coord pos) {
-		return (pos.x >= 0) && (pos.y >= 0) && (pos.x < width) && (pos.y < height);
-	}
-
-	Cell getCell(final Coord pos) {
-		return cells[pos.y][pos.x];
-	}
 }

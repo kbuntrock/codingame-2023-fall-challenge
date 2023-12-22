@@ -16,6 +16,7 @@ public class VecteurTest {
 
 		final Coord newDepart = new Coord(0, 0);
 		final Coord newArrivee = newDepart.add(vecteur.adapt(11.18));
+//		final Coord newArrivee = newDepart.add(vecteur.adapt(600));
 		System.out.println(newArrivee);
 	}
 

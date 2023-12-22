@@ -26,20 +26,57 @@ public class Cortex {
 		this.board = board;
 	}
 
+	public int trouverHabitatPlusProfondNonScanne() {
+		int habitatPlusProfond = -1;
+		for(final Poisson poisson : board.poissonsById.values()) {
+			boolean scanned = board.myTeam.savedScans.contains(poisson.id);
+			if(!scanned) {
+				for(final Robot robot : board.myTeam.robots) {
+					scanned = robot.scans.contains(poisson.id);
+					if(scanned) {
+						break;
+					}
+				}
+			}
+			if(!scanned && habitatPlusProfond < poisson.espece) {
+				habitatPlusProfond = poisson.espece;
+			}
+		}
+		return habitatPlusProfond;
+	}
+
 	public void explorerHabitat() {
 
 		for(int i = 0; i < 2; i++) {
 			final int fi = i;
 			final Robot robot = board.myTeam.robots.get(i);
 
+			if(paniqueMode(robot)) {
+				continue;
+			}
+
 			final int profondeurMinimale = habitat[especeRecherchee[i]][0];
 			final int profondeurMaximale = habitat[especeRecherchee[i]][1];
 			if(robot.pos.y - profondeurSauvegarde < 0) {
 				if(!peutChangerHabitat[i]) {
 					// Descendre
-					robot.action = Action.move(new Coord(robot.pos.x, robot.pos.y + 600), false);
+					final boolean light = IO.turn == 5 || IO.turn == 10;
+					robot.action = Action.move(new Coord(robot.pos.x, robot.pos.y + 600), light);
 					robot.action.message = "Going down for " + especeRecherchee[i];
 				} else {
+
+					if(robot.pos.y < 500) {
+						// Changement d'habitat forcé
+						// on vérifie si on a bien tout exploré (on a possiblement lâché des scans)
+						final int habitatRestant = trouverHabitatPlusProfondNonScanne();
+						if(habitatRestant >= 0) {
+							especeRecherchee[i] = habitatRestant;
+							peutChangerHabitat[i] = false;
+							robot.action = Action.move(new Coord(robot.pos.x, robot.pos.y + 600), false);
+							robot.action.message = "Re-going down for " + especeRecherchee[i];
+							continue;
+						}
+					}
 					// Remonter
 					robot.action = Action.move(new Coord(robot.pos.x, robot.pos.y - 600), false);
 					robot.action.message = "Going up";
@@ -48,7 +85,9 @@ public class Cortex {
 						especeRecherchee[i]--;
 						peutChangerHabitat[i] = false;
 						robot.action.message = "pro espece : " + especeRecherchee[i];
+
 					}
+
 				}
 			} else {
 				// Exploration
@@ -85,7 +124,7 @@ public class Cortex {
 						visee = robot.pos.add(currentRadio.direction.direction, profondeurMinimale, profondeurMaximale);
 						previousRadio[i] = currentRadio;
 					}
-					robot.action = Action.move(visee, light);
+					robot.action = Action.move(visee, light || (IO.turn == 5 || IO.turn == 10));
 					robot.action.message = "Exploration " + especeRecherchee[i];
 				} else {
 					// Remonter
@@ -95,6 +134,24 @@ public class Cortex {
 			}
 		}
 
+	}
+
+	private boolean paniqueMode(final Robot robot) {
+		final List<Monstre> monstresAPortee = new ArrayList<>();
+		for(final Monstre monstre : board.monstresById.values()) {
+			if(monstre.pos != null && (robot.pos.distance(monstre.pos.add(monstre.vitesse)) < 1200
+				|| robot.pos.distance(monstre.pos) < 1200)) {
+				monstresAPortee.add(monstre);
+			}
+		}
+		if(!monstresAPortee.isEmpty()) {
+			final Vecteur v = new Vecteur(monstresAPortee.get(0).pos, robot.pos).adapt(1000);
+			robot.action = Action.move(robot.pos.add(v), false);
+			robot.action.message = "Oh my gosh";
+			return true;
+		}
+
+		return false;
 	}
 
 	public Poisson trouverPoissonNonScannePlusProche() {

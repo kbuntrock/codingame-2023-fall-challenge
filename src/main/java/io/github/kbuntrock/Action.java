@@ -27,14 +27,6 @@ public class Action {
 		return new Action("MOVE", pos, null, light);
 	}
 
-	static Action dig(final Coord pos) {
-		return new Action("DIG", pos, null, false);
-	}
-
-	static Action request(final EntityType item) {
-		return new Action("REQUEST", null, item, false);
-	}
-
 	@Override
 	public String toString() {
 		final StringBuilder builder = new StringBuilder(command);

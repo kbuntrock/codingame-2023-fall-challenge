@@ -1,15 +1,12 @@
 package io.github.kbuntrock;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-
 /**
  * @author Kévin Buntrock
  */
 public class Coord {
 
-	public static final BigDecimal POSITIF = BigDecimal.valueOf(424l);
-	public static final BigDecimal NEGATIF = BigDecimal.valueOf(-424l);
+	public static final int POSITIF = 424;
+	public static final int NEGATIF = -424;
 
 	final int x;
 	final int y;
@@ -32,9 +29,9 @@ public class Coord {
 	}
 
 	Coord add(final Vecteur vecteur, final int profondeurMinimale, final int profondeurMaximale) {
-		final double x = Math.max(0, Math.min(this.x + vecteur.x.setScale(0, RoundingMode.HALF_DOWN).longValue(), 10000));
+		final double x = Math.max(0, Math.min(this.x + vecteur.x, 10000));
 		final double y = Math.max(profondeurMinimale,
-			Math.min(this.y + vecteur.y.setScale(0, RoundingMode.HALF_DOWN).longValue(), profondeurMaximale));
+			Math.min(this.y + vecteur.y, profondeurMaximale));
 		return new Coord((int) x, (int) y);
 	}
 

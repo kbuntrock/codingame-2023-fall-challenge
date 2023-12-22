@@ -5,7 +5,7 @@ package io.github.kbuntrock;
  */
 public class IO {
 
-	static int turn = 0;
+	static int turn = -1;
 
 	public static void incrementTurn() {
 		turn++;

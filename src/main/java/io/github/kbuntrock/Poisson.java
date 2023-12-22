@@ -13,18 +13,11 @@ public class Poisson extends Entity {
 	Coord prochainePosition;
 
 	Poisson(final int id, final Coord pos, final Coord vitesse, final int couleur, final int espece) {
-		super(id, pos, EntityType.FISH);
+		super(id, pos, EntityType.POISSON);
 		this.couleur = couleur;
 		this.espece = espece;
 		this.vitesse = vitesse;
 		setProchainePosition();
-	}
-
-	Poisson(final EScanner in) {
-		super(in);
-		couleur = in.nextInt();
-		espece = in.nextInt();
-		type = EntityType.FISH;
 	}
 
 	void setPosition(final EScanner in) {
@@ -36,8 +29,15 @@ public class Poisson extends Entity {
 		setProchainePosition();
 	}
 
+	void setVitesse(final Coord vitesse) {
+		this.vitesse = vitesse;
+		setProchainePosition();
+	}
+
 	void setProchainePosition() {
-		prochainePosition = pos.add(vitesse);
+		if(pos != null) {
+			prochainePosition = pos.add(vitesse);
+		}
 	}
 
 	public boolean visible() {

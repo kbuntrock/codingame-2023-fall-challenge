@@ -27,7 +27,12 @@ public class Radar {
 			final int creatureId = in.nextInt();
 			final String radar = in.next();
 			final List<Radio> list = radios.computeIfAbsent(droneId, k -> new ArrayList<>());
-			list.add(new Radio(Direction.valueOf(radar), board.poissonsById.get(creatureId)));
+			final Poisson p = board.poissonsById.get(creatureId);
+			if(p != null) {
+				// On peut être en présence du scan d'un monstre. Non géré pour l'instant
+				list.add(new Radio(Direction.valueOf(radar), board.poissonsById.get(creatureId)));
+			}
+
 		}
 	}
 
