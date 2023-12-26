@@ -3,11 +3,14 @@ package io.github.kbuntrock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author Kévin Buntrock
  */
 public class Cortex {
+
+	private static final List<Integer> anglesATester = new ArrayList<>();
 
 	int profondeurSauvegarde = 500;
 
@@ -20,6 +23,15 @@ public class Cortex {
 	final Radio[] previousRadio = new Radio[]{null, null};
 
 	final boolean[] peutChangerHabitat = new boolean[]{false, false};
+
+	static {
+		anglesATester.add(0);
+		for(int i = 10; i < 180; i += 10) {
+			anglesATester.add(-i);
+			anglesATester.add(i);
+		}
+		anglesATester.add(180);
+	}
 
 
 	public Cortex(final Board board) {
@@ -51,9 +63,9 @@ public class Cortex {
 			final int fi = i;
 			final Robot robot = board.myTeam.robots.get(i);
 
-			if(paniqueMode(robot)) {
-				continue;
-			}
+//			if(paniqueMode(robot)) {
+//				continue;
+//			}
 
 			final int profondeurMinimale = habitat[especeRecherchee[i]][0];
 			final int profondeurMaximale = habitat[especeRecherchee[i]][1];
@@ -132,7 +144,7 @@ public class Cortex {
 					robot.action.message = "On remonte des profondeurs";
 				}
 			}
-			//esquiverMonstre(robot, robot.action.pos);
+			esquiverMonstre(robot, robot.action.pos);
 
 		}
 
@@ -156,33 +168,54 @@ public class Cortex {
 		return false;
 	}
 
-	private Vecteur esquiverMonstre(final Robot robot, final Vecteur visee) {
-		Monstre plusProcheMonstreAPortee = null;
-		double minimalSquaredDistance = Double.MAX_VALUE;
-		for(final Monstre monstre : board.monstresById.values()) {
-			if(monstre.prochainePosition != null) {
-				final double squaredDistance = visee.squareDistance(monstre.prochainePosition);
-				// 500^2
-				if(squaredDistance < 250000 && squaredDistance < minimalSquaredDistance) {
-					minimalSquaredDistance = squaredDistance;
-					plusProcheMonstreAPortee = monstre;
-				}
+	private void esquiverMonstre(final Robot robot, final Vecteur visee) {
 
+		final Vecteur vitesse = visee.minus(robot.pos);
+		final double longueur = vitesse.longueur();
+
+		Vecteur newVisee = null;
+		int newAngle = 0;
+
+		for(final Integer angle : anglesATester) {
+			newVisee = collisionAvecMonstre(robot, visee, longueur, angle);
+			if(newVisee != null) {
+				newAngle = angle;
+				break;
 			}
 		}
-		if(plusProcheMonstreAPortee == null) {
-			IO.info("Pas de plus proche monstre à esquiver pour robot " + robot.id);
-			return visee;
+		if(newVisee == null) {
+			robot.action = Action.none();
+			robot.action.message = "No escape";
+		} else if(newAngle == 0) {
+			IO.info("Pas de correction pour robot " + robot.id);
+		} else {
+			IO.info("Correction d'angle " + newAngle + " pour robot " + robot.id);
+			robot.action = Action.move(newVisee, robot.action.light);
+			robot.action.message = "Cap " + newAngle;
 		}
-		final Vecteur[] cibles = robot.pos.intersection(600, plusProcheMonstreAPortee.prochainePosition, 500);
-		if(cibles != null) {
-			IO.info("/!\\ Premier monstre à esquiver pour robot " + robot.id);
-			IO.info("Cible 1 : " + cibles[0]);
-			IO.info("Cible 2 : " + cibles[1]);
-			// On part de là
+	}
+
+	private Vecteur collisionAvecMonstre(final Robot robot, final Vecteur visee, final double longueur, final int angle) {
+
+		Vecteur newVisee = visee;
+
+		if(angle != 0) {
+			// x3 = AB * Cos(angle) + x1
+			// y3 = AB * Sin(angle) + y1
+			final double x3 = (longueur * Math.cos(angle)) + visee.x;
+			final double y3 = (longueur * Math.sin(angle)) + visee.y;
+			newVisee = new Vecteur(x3, y3);
 		}
-		return null;
-		//throw new RuntimeException("non géré");
+
+		for(final Monstre monstre : board.monstresById.values().stream().filter(m -> m.pos != null).collect(Collectors.toList())) {
+			if(robot.collide(monstre, newVisee)) {
+				// Collision avec un monstre
+				// Position null
+				return null;
+			}
+		}
+		// On a un potentiel gagnant qu'on remonte
+		return newVisee;
 	}
 
 

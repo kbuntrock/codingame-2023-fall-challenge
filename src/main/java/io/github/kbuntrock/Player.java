@@ -30,7 +30,6 @@ public class Player {
 			in.export();
 
 			//IO.info("Mes scans : " + board.myTeam.savedScans.stream().map(x -> String.valueOf(x)).collect(Collectors.joining(", ")));
-			IO.info("Etat robot : " + board.myTeam.robots.get(0).toString());
 			cortex.explorerHabitat();
 
 			// Send your actions for this turn

@@ -50,7 +50,7 @@ public class Board {
 	void update(final EScanner in) {
 		// Reset poissons
 		poissonsById.values().stream().forEach(Poisson::resetPosition);
-		//monstresById.values().stream().forEach(Monstre::resetPositionIfTooOld);
+		monstresById.values().stream().forEach(Monstre::resetPositionIfTooOld);
 
 		// Read new data
 		myTeam.readScore(in);

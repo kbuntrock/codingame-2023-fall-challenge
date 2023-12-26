@@ -10,6 +10,8 @@ import java.util.Objects;
  */
 public class Vecteur {
 
+	public static final Vecteur ZERO = new Vecteur(0, 0);
+
 	double x;
 
 	double y;
@@ -27,6 +29,10 @@ public class Vecteur {
 	public Vecteur(final double x, final double y) {
 		this.x = x;
 		this.y = y;
+	}
+
+	public double longueur() {
+		return Math.sqrt(Vecteur.ZERO.squareDistance(this));
 	}
 
 	Vecteur add(final Vecteur other) {
@@ -59,6 +65,14 @@ public class Vecteur {
 		final BigDecimal yAxis = BigDecimal.valueOf(y * distance / Math.sqrt(squaredLenght)).setScale(0, RoundingMode.HALF_DOWN);
 
 		return new Vecteur(xAxis.intValue(), yAxis.intValue());
+	}
+
+	public boolean aPortee(final Vecteur v, final double range) {
+		return (v.x - x) * (v.x - x) + (v.y - y) * (v.y - y) <= range * range;
+	}
+
+	public boolean isZero() {
+		return x == 0 && y == 0;
 	}
 
 	/**
