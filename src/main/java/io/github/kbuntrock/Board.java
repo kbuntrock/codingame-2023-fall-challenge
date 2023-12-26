@@ -50,7 +50,7 @@ public class Board {
 	void update(final EScanner in) {
 		// Reset poissons
 		poissonsById.values().stream().forEach(Poisson::resetPosition);
-		//monstresById.values().stream().forEach(Poisson::resetPosition);
+		//monstresById.values().stream().forEach(Monstre::resetPositionIfTooOld);
 
 		// Read new data
 		myTeam.readScore(in);
@@ -111,7 +111,7 @@ public class Board {
 				final Vecteur v = new Vecteur(m.vitesse.x, m.vitesse.y);
 				v.adapt(Monstre.VITESSE_NON_AGRESSIVE);
 				m.pos = m.pos.add(v, 2500, 10000);
-				m.setVitesse(new Coord(v.x, v.y));
+				m.setVitesse(new Vecteur(v.x, v.y));
 				IO.info(
 					"On pense que le monstre " + m.id + " est en " + m.pos + " - vitesse " + m.vitesse + " - next pos "
 						+ m.prochainePosition);

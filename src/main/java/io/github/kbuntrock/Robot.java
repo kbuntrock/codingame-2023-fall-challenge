@@ -17,7 +17,7 @@ public abstract class Robot extends Entity {
 
 	Robot(final EScanner in) {
 		super(in);
-		pos = new Coord(in);
+		pos = new Vecteur(in);
 		emergency = in.nextInt();
 		battery = in.nextInt();
 	}

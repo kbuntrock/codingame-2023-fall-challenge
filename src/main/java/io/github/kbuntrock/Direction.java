@@ -5,10 +5,10 @@ package io.github.kbuntrock;
  */
 public enum Direction {
 	T(new Vecteur(0, 600)),
-	TL(new Vecteur(Coord.NEGATIF, Coord.NEGATIF)),
-	TR(new Vecteur(Coord.POSITIF, Coord.NEGATIF)),
-	BR(new Vecteur(Coord.POSITIF, Coord.POSITIF)),
-	BL(new Vecteur(Coord.NEGATIF, Coord.POSITIF));
+	TL(new Vecteur(-424, -424)),
+	TR(new Vecteur(424, -424)),
+	BR(new Vecteur(424, 424)),
+	BL(new Vecteur(-424, 424));
 
 
 	final Vecteur direction;

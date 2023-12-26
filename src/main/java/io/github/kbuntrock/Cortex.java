@@ -61,7 +61,7 @@ public class Cortex {
 				if(!peutChangerHabitat[i]) {
 					// Descendre
 					final boolean light = IO.turn == 5 || IO.turn == 10;
-					robot.action = Action.move(new Coord(robot.pos.x, robot.pos.y + 600), light);
+					robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y + 600), light);
 					robot.action.message = "Going down for " + especeRecherchee[i];
 				} else {
 
@@ -72,13 +72,13 @@ public class Cortex {
 						if(habitatRestant >= 0) {
 							especeRecherchee[i] = habitatRestant;
 							peutChangerHabitat[i] = false;
-							robot.action = Action.move(new Coord(robot.pos.x, robot.pos.y + 600), false);
+							robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y + 600), false);
 							robot.action.message = "Re-going down for " + especeRecherchee[i];
 							continue;
 						}
 					}
 					// Remonter
-					robot.action = Action.move(new Coord(robot.pos.x, robot.pos.y - 600), false);
+					robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), false);
 					robot.action.message = "Going up";
 					// On change d'espèce pour notre prochaine plongée
 					if(peutChangerHabitat[i] && especeRecherchee[i] > 0) {
@@ -94,7 +94,7 @@ public class Cortex {
 				peutChangerHabitat[i] = true;
 				final List<Radio> radios = board.radar.filtered(robot.id, especeRecherchee[i]);
 				boolean light = false;
-				Coord visee = null;
+				Vecteur visee = null;
 				if(!radios.isEmpty()) {
 
 					if(previousRadio[i] != null) {
@@ -128,10 +128,12 @@ public class Cortex {
 					robot.action.message = "Exploration " + especeRecherchee[i];
 				} else {
 					// Remonter
-					robot.action = Action.move(new Coord(robot.pos.x, robot.pos.y - 600), false);
+					robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), false);
 					robot.action.message = "On remonte des profondeurs";
 				}
 			}
+			//esquiverMonstre(robot, robot.action.pos);
+
 		}
 
 	}
@@ -139,8 +141,8 @@ public class Cortex {
 	private boolean paniqueMode(final Robot robot) {
 		final List<Monstre> monstresAPortee = new ArrayList<>();
 		for(final Monstre monstre : board.monstresById.values()) {
-			if(monstre.pos != null && (robot.pos.distance(monstre.pos.add(monstre.vitesse)) < 1200
-				|| robot.pos.distance(monstre.pos) < 1200)) {
+			if(monstre.pos != null && (robot.pos.intDistance(monstre.pos.add(monstre.vitesse)) < 1200
+				|| robot.pos.intDistance(monstre.pos) < 1200)) {
 				monstresAPortee.add(monstre);
 			}
 		}
@@ -154,16 +156,46 @@ public class Cortex {
 		return false;
 	}
 
+	private Vecteur esquiverMonstre(final Robot robot, final Vecteur visee) {
+		Monstre plusProcheMonstreAPortee = null;
+		double minimalSquaredDistance = Double.MAX_VALUE;
+		for(final Monstre monstre : board.monstresById.values()) {
+			if(monstre.prochainePosition != null) {
+				final double squaredDistance = visee.squareDistance(monstre.prochainePosition);
+				// 500^2
+				if(squaredDistance < 250000 && squaredDistance < minimalSquaredDistance) {
+					minimalSquaredDistance = squaredDistance;
+					plusProcheMonstreAPortee = monstre;
+				}
+
+			}
+		}
+		if(plusProcheMonstreAPortee == null) {
+			IO.info("Pas de plus proche monstre à esquiver pour robot " + robot.id);
+			return visee;
+		}
+		final Vecteur[] cibles = robot.pos.intersection(600, plusProcheMonstreAPortee.prochainePosition, 500);
+		if(cibles != null) {
+			IO.info("/!\\ Premier monstre à esquiver pour robot " + robot.id);
+			IO.info("Cible 1 : " + cibles[0]);
+			IO.info("Cible 2 : " + cibles[1]);
+			// On part de là
+		}
+		return null;
+		//throw new RuntimeException("non géré");
+	}
+
+
 	public Poisson trouverPoissonNonScannePlusProche() {
 		final Robot robot = board.myTeam.robots.get(0);
 		Poisson plusProche = null;
-		int minDistance = Integer.MAX_VALUE;
+		double minDistance = Double.MAX_VALUE;
 		for(final Poisson poisson : board.poissonsById.values()) {
 			if(poisson.visible() && !board.myTeam.savedScans.contains(poisson.id) && !robot.scans.contains(poisson.id)) {
-				final Coord prochainePosition = poisson.prochainePosition;
+				final Vecteur prochainePosition = poisson.prochainePosition;
 				IO.info("Poisson " + poisson.id + " : " + poisson.pos.toString() + " v : " + poisson.vitesse.toString() + " -> "
 					+ prochainePosition);
-				final int distance = robot.pos.squareDistance(prochainePosition);
+				final double distance = robot.pos.squareDistance(prochainePosition);
 				if(minDistance > distance) {
 					minDistance = distance;
 					plusProche = poisson;
@@ -174,8 +206,8 @@ public class Cortex {
 		return plusProche;
 	}
 
-	public Coord calculerMouvement(final Poisson poisson) {
-		final Coord visee = poisson.pos.add(poisson.vitesse);
+	public Vecteur calculerMouvement(final Poisson poisson) {
+		final Vecteur visee = poisson.pos.add(poisson.vitesse);
 		IO.info("Future position poisson : " + visee);
 		final Robot robot = board.myTeam.robots.get(0);
 
@@ -183,14 +215,14 @@ public class Cortex {
 		return robot.pos.add(vecteur.adapt(600));
 	}
 
-	public List<Poisson> trouverPoissonsAPortee(final Coord position, final int distanceMin, final int distanceMax) {
-		final int sqDistanceMax = distanceMax * distanceMax;
-		final int sqDistanceMin = distanceMin * distanceMin;
+	public List<Poisson> trouverPoissonsAPortee(final Vecteur position, final int distanceMin, final int distanceMax) {
+		final double sqDistanceMax = distanceMax * distanceMax;
+		final double sqDistanceMin = distanceMin * distanceMin;
 		final List<Poisson> poissonsAPortee = new ArrayList<>();
 		for(final Poisson poisson : board.poissonsById.values()) {
 			if(!board.myTeam.savedScans.contains(poisson.id)) {
-				final Coord prochainePosition = poisson.prochainePosition;
-				final int distancePoisson = position.squareDistance(prochainePosition);
+				final Vecteur prochainePosition = poisson.prochainePosition;
+				final double distancePoisson = position.squareDistance(prochainePosition);
 				if(distancePoisson > sqDistanceMin && distancePoisson <= sqDistanceMax) {
 					poissonsAPortee.add(poisson);
 				}

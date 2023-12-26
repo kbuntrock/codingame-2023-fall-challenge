@@ -8,11 +8,11 @@ public class Poisson extends Entity {
 	final int couleur;
 	final int espece;
 
-	Coord vitesse;
+	Vecteur vitesse;
 
-	Coord prochainePosition;
+	Vecteur prochainePosition;
 
-	Poisson(final int id, final Coord pos, final Coord vitesse, final int couleur, final int espece) {
+	Poisson(final int id, final Vecteur pos, final Vecteur vitesse, final int couleur, final int espece) {
 		super(id, pos, EntityType.POISSON);
 		this.couleur = couleur;
 		this.espece = espece;
@@ -21,15 +21,15 @@ public class Poisson extends Entity {
 	}
 
 	void setPosition(final EScanner in) {
-		pos = new Coord(in);
+		pos = new Vecteur(in);
 	}
 
 	void setVitesse(final EScanner in) {
-		vitesse = new Coord(in);
+		vitesse = new Vecteur(in);
 		setProchainePosition();
 	}
 
-	void setVitesse(final Coord vitesse) {
+	void setVitesse(final Vecteur vitesse) {
 		this.vitesse = vitesse;
 		setProchainePosition();
 	}

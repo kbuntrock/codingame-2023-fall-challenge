@@ -6,13 +6,13 @@ package io.github.kbuntrock;
 public class Action {
 
 	final String command;
-	final Coord pos;
+	final Vecteur pos;
 	final EntityType item;
 
 	final boolean light;
 	String message;
 
-	private Action(final String command, final Coord pos, final EntityType item, final boolean light) {
+	private Action(final String command, final Vecteur pos, final EntityType item, final boolean light) {
 		this.command = command;
 		this.pos = pos;
 		this.item = item;
@@ -23,7 +23,7 @@ public class Action {
 		return new Action("WAIT", null, null, false);
 	}
 
-	static Action move(final Coord pos, final boolean light) {
+	static Action move(final Vecteur pos, final boolean light) {
 		return new Action("MOVE", pos, null, light);
 	}
 
@@ -31,7 +31,7 @@ public class Action {
 	public String toString() {
 		final StringBuilder builder = new StringBuilder(command);
 		if(pos != null) {
-			builder.append(' ').append(pos);
+			builder.append(' ').append(pos.toAction());
 		}
 		builder.append(' ').append(light ? "1" : "0");
 		if(item != null) {
