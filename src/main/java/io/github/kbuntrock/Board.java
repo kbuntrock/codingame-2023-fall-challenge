@@ -110,7 +110,7 @@ public class Board {
 			if(m.vitesse.x + m.vitesse.y != 0) {
 				final Vecteur v = new Vecteur(m.vitesse.x, m.vitesse.y);
 				v.adapt(Monstre.VITESSE_NON_AGRESSIVE);
-				m.pos = m.pos.add(v, 2500, 10000);
+				m.pos = m.pos.add(v).adaptToMap();
 				m.setVitesse(new Vecteur(v.x, v.y));
 				IO.info(
 					"On pense que le monstre " + m.id + " est en " + m.pos + " - vitesse " + m.vitesse + " - next pos "

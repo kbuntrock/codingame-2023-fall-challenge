@@ -8,6 +8,16 @@ import org.junit.jupiter.api.Test;
 public class VecteurTest {
 
 	@Test
+	public void calcul() {
+		final Poisson p = new Poisson(1, new Vecteur(0, 0), new Vecteur(0, 0), 0, 0);
+		p.currentMinX = 0;
+		p.currentMinY = 0;
+		p.currentMaxX = 10;
+		p.currentMaxY = 10;
+		p.milieuRectangle();
+	}
+
+	@Test
 	public void intersection() {
 		final Vecteur c1 = new Vecteur(-9, 1);
 		final Vecteur c2 = new Vecteur(5, -5);

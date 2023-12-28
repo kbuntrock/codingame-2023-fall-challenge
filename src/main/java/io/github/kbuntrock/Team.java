@@ -39,4 +39,8 @@ public class Team {
 	public void resetRobots() {
 		robots.clear();
 	}
+
+	public Robot getOtherRobot(final Robot currentRobot) {
+		return robots.stream().filter(r -> r.id != currentRobot.id).findAny().get();
+	}
 }

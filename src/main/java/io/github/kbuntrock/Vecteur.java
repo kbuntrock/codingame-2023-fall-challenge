@@ -35,15 +35,12 @@ public class Vecteur {
 		return Math.sqrt(Vecteur.ZERO.squareDistance(this));
 	}
 
-	Vecteur add(final Vecteur other) {
-		return add(other, 0, 10000);
+	Vecteur add(final Vecteur vecteur) {
+		return new Vecteur(x + vecteur.x, y + vecteur.y);
 	}
 
-	Vecteur add(final Vecteur vecteur, final int profondeurMinimale, final int profondeurMaximale) {
-		final double x = Math.max(0, Math.min(this.x + vecteur.x, 10000));
-		final double y = Math.max(profondeurMinimale,
-			Math.min(this.y + vecteur.y, profondeurMaximale));
-		return new Vecteur(x, y);
+	Vecteur adaptToMap() {
+		return new Vecteur(Math.min(Math.max(x, 0), 10000), Math.min(Math.max(y, 0), 10000));
 	}
 
 	Vecteur minus(final Vecteur other) {

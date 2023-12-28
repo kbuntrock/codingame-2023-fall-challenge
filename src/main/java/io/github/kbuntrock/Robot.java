@@ -37,7 +37,10 @@ public abstract class Robot extends Entity {
 		throw new RuntimeException("Direction non gérée");
 	}
 
-	public boolean collide(final Monstre ugly, final Vecteur visee) {
+	public boolean collide(final Monstre ugly, final Vecteur viseeInitiale) {
+
+		// Au cas où on vise en dehors de la carte, on corrige les coordonnées pour le calcul de collision
+		final Vecteur visee = viseeInitiale.adaptToMap();
 		// Check instant collision
 		if(ugly.pos.aPortee(visee, HIT_RANGE + Monstre.EAT_RANGE)) {
 			return true;

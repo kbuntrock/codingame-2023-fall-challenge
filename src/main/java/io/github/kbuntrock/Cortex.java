@@ -2,7 +2,6 @@ package io.github.kbuntrock;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +21,8 @@ public class Cortex {
 
 	final Radio[] previousRadio = new Radio[]{null, null};
 
+	final Poisson[] poissonSuivi = new Poisson[]{null, null};
+
 	final boolean[] peutChangerHabitat = new boolean[]{false, false};
 
 	static {
@@ -40,7 +41,7 @@ public class Cortex {
 
 	public int trouverHabitatPlusProfondNonScanne() {
 		int habitatPlusProfond = -1;
-		for(final Poisson poisson : board.poissonsById.values()) {
+		for(final Poisson poisson : board.poissonsById.values().stream().filter(p -> !p.horsTerrain).collect(Collectors.toList())) {
 			boolean scanned = board.myTeam.savedScans.contains(poisson.id);
 			if(!scanned) {
 				for(final Robot robot : board.myTeam.robots) {
@@ -104,43 +105,21 @@ public class Cortex {
 			} else {
 				// Exploration
 				peutChangerHabitat[i] = true;
-				final List<Radio> radios = board.radar.filtered(robot.id, especeRecherchee[i]);
-				boolean light = false;
-				Vecteur visee = null;
-				if(!radios.isEmpty()) {
 
-					if(previousRadio[i] != null) {
-						final Optional<Radio> opt = radios.stream().filter(r -> r.poisson.id == previousRadio[fi].poisson.id).findAny();
-						if(opt.isEmpty()) {
-							previousRadio[i] = null;
-						} else {
-							final Radio currentRadio = opt.get();
-							visee = robot.pos.add(currentRadio.direction.direction, profondeurMinimale, profondeurMaximale);
-							if(previousRadio[i].direction != currentRadio.direction) {
-								// Changement de direction soudain.
-								// On allume la lumière pour voir si on peut le rattraper ?
-								light = true;
-							}
-						}
-					}
-					if(previousRadio[i] == null) {
-						// On essaie de trouver une direction oposée à l'autre robot
-						final Direction directionAutreRobot = robot.directionEntity(board.myTeam.robots.get(1 - i));
-						final Optional<Radio> optRadio = radios.stream().filter(
-							r -> directionAutreRobot.isOppositeXDirection(r.direction)).findAny();
-						if(optRadio.isPresent()) {
-							IO.info("Une radio correspond à la direction opposée au robot " + i + " : " + optRadio.get() + " par rapport à "
-								+ directionAutreRobot);
-						}
-						final Radio currentRadio = optRadio.isPresent() ? optRadio.get() : radios.get(0);
-						visee = robot.pos.add(currentRadio.direction.direction, profondeurMinimale, profondeurMaximale);
-						previousRadio[i] = currentRadio;
-					}
-					robot.action = Action.move(visee, light || (IO.turn == 5 || IO.turn == 10));
-					robot.action.message = "Exploration " + especeRecherchee[i];
+				final Poisson poissonATrouver = trouverPoissonPlusProche(robot, especeRecherchee[i], poissonSuivi[1 - i]);
+
+				final boolean light = IO.turn % 5 == 0 && IO.turn != 0;
+
+				poissonSuivi[i] = poissonATrouver;
+				if(poissonATrouver != null) {
+
+					final Vecteur vecteurVisee = new Vecteur(robot.pos, poissonATrouver.milieuRectangle()).adapt(600);
+					robot.action = Action.move(robot.pos.add(vecteurVisee), light);
+					robot.action.message = "P" + poissonATrouver.id + "-" + especeRecherchee[i];
+					IO.info("Poisson recherché pour robot " + robot.id + " : " + poissonATrouver.id);
 				} else {
 					// Remonter
-					robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), false);
+					robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), light);
 					robot.action.message = "On remonte des profondeurs";
 				}
 			}
@@ -150,6 +129,31 @@ public class Cortex {
 
 	}
 
+	private Poisson trouverPoissonPlusProche(final Robot robot, final int especeRecherchee, final Poisson exclusion) {
+		final Robot autreRobot = board.myTeam.getOtherRobot(robot);
+		// Trouve les poissons non encore scannés de l'espèce demandée
+		final List<Poisson> poissons = board.poissonsById.values().stream().filter(p ->
+				p.espece == especeRecherchee
+					&& !p.horsTerrain
+					&& !board.myTeam.savedScans.contains(p.id) && !robot.scans.contains(p.id) && !autreRobot.scans.contains(p.id)
+					&& (exclusion == null || exclusion.id != p.id))
+			.collect(Collectors.toList());
+		if(poissons.isEmpty()) {
+			return null;
+		}
+		double minSqrDistance = Double.MAX_VALUE;
+		Poisson result = null;
+		for(final Poisson p : poissons) {
+			final double sqrDistance = robot.pos.squareDistance(p.milieuRectangle());
+			if(sqrDistance < minSqrDistance) {
+				minSqrDistance = sqrDistance;
+				result = p;
+			}
+		}
+		return result;
+	}
+
+	// TODO : à supprimer quand l'esquive sera au point
 	private boolean paniqueMode(final Robot robot) {
 		final List<Monstre> monstresAPortee = new ArrayList<>();
 		for(final Monstre monstre : board.monstresById.values()) {
@@ -190,8 +194,10 @@ public class Cortex {
 			IO.info("Pas de correction pour robot " + robot.id);
 		} else {
 			IO.info("Correction d'angle " + newAngle + " pour robot " + robot.id);
+			IO.info("Visee initiale " + visee + " corrigée en " + newVisee);
+			final Action oldAction = robot.action;
 			robot.action = Action.move(newVisee, robot.action.light);
-			robot.action.message = "Cap " + newAngle;
+			robot.action.message = oldAction.message + " - " + newAngle;
 		}
 	}
 
@@ -199,12 +205,25 @@ public class Cortex {
 
 		Vecteur newVisee = visee;
 
-		if(angle != 0) {
+		if(angle != 0) { // angle != 0
+
 			// x3 = AB * Cos(angle) + x1
 			// y3 = AB * Sin(angle) + y1
-			final double x3 = (longueur * Math.cos(angle)) + visee.x;
-			final double y3 = (longueur * Math.sin(angle)) + visee.y;
-			newVisee = new Vecteur(x3, y3);
+//			final double x3 = (longueur * Math.cos(angle)) + robot.pos.x;
+//			final double y3 = (longueur * Math.sin(angle)) + robot.pos.y;
+
+			//10° × π/180
+			final double rad = angle * Math.PI / 180;
+			final Vecteur vecteur = visee.minus(robot.pos);
+			final double x3 = (vecteur.x * Math.cos(rad)) - (vecteur.y * Math.sin(rad));
+			final double y3 = (vecteur.y * Math.cos(rad)) + (vecteur.x * Math.sin(rad));
+			newVisee = new Vecteur(x3, y3).add(robot.pos);
+		}
+		// Bloc de vérification
+		// TODO : à supprimer lorsqu'au point
+		final int newLongueur = (int) newVisee.minus(robot.pos).longueur();
+		if(newLongueur > 600) {
+			throw new RuntimeException("Nouvelle visee impossible pour angle " + angle + " -> " + newLongueur);
 		}
 
 		for(final Monstre monstre : board.monstresById.values().stream().filter(m -> m.pos != null).collect(Collectors.toList())) {
