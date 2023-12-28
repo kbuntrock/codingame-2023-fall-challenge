@@ -40,7 +40,9 @@ public class EScanner {
 	}
 
 	public EScanner(final String inputs) {
-		final String[] arrays = inputs.split("->")[1].split(";");
+		final String[] base = inputs.split("->");
+		final String[] arrays = base[1].split(";");
+		IO.turn = Integer.valueOf(base[0].substring(1));
 		global = Arrays.stream(arrays[0].split(":")).map(x -> Integer.valueOf(x)).collect(Collectors.toList());
 		turn = Arrays.stream(arrays[1].split(":")).map(x -> {
 			try {
@@ -50,6 +52,7 @@ public class EScanner {
 			}
 			return x;
 		}).collect(Collectors.toList());
+		IO.lastTurnData = new LastTurnData(arrays[2]);
 		buffer = global;
 		testMode = true;
 	}
@@ -81,6 +84,8 @@ public class EScanner {
 		sb.append(global.stream().map(x -> String.valueOf(x)).collect(Collectors.joining(":")));
 		sb.append(";");
 		sb.append(turn.stream().map(x -> String.valueOf(x)).collect(Collectors.joining(":")));
+		sb.append(";");
+		sb.append(IO.lastTurnData == null ? "null" : IO.lastTurnData.serialized);
 		IO.export(sb.toString());
 	}
 }

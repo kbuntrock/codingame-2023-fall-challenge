@@ -33,6 +33,8 @@ public class Radar {
 			if(p != null) {
 				// On peut être en présence du scan d'un monstre. Non géré pour l'instant
 				p.horsTerrain = false;
+				// "Ancien" poisson (précédente version de ses coordonnées)
+				final Poisson ap = IO.lastTurnData.poissonById.get(creatureId);
 
 				list.add(new Radio(Direction.valueOf(radar), p));
 
@@ -55,6 +57,27 @@ public class Radar {
 						p.currentMaxX = Math.min(robot.pos.x, p.currentMaxX);
 						p.currentMinY = Math.max(p.currentMinY, Math.max(robot.pos.y, p.absoluteMinY));
 					}
+				}
+
+				if(ap != null) {
+					if(p.currentMaxX > ap.currentMaxX) {
+						p.currentMaxX = Math.min(Math.min(p.currentMaxX, ap.currentMaxX + 200), 10000);
+					}
+					if(p.currentMinX < ap.currentMinX) {
+						p.currentMinX = Math.max(Math.max(p.currentMinX, ap.currentMinX - 200), 0);
+					}
+					if(p.currentMaxY > ap.currentMaxY) {
+						p.currentMaxY = Math.min(Math.min(p.currentMaxY, ap.currentMaxY + 200), p.absoluteMaxY);
+					}
+					if(p.currentMinY < ap.currentMinY) {
+						p.currentMinY = Math.max(Math.max(p.currentMinY, ap.currentMinY - 200), p.absoluteMinY);
+					}
+				}
+
+				if(creatureId == 8) {
+					final boolean existe = ap != null;
+					IO.info("Ancien poisson 8 existe? " + (existe) + " : " + (existe ? (ap.currentMinX + ":" + ap.currentMaxX) : "empty"));
+					IO.info("Après correction p 8 : " + p.currentMinX + ":" + p.currentMaxX);
 				}
 			}
 

@@ -7,6 +7,8 @@ public class IO {
 
 	static int turn = -1;
 
+	public static LastTurnData lastTurnData = new LastTurnData();
+
 	public static void incrementTurn() {
 		turn++;
 	}

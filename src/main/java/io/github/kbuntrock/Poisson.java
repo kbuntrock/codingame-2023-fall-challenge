@@ -1,9 +1,11 @@
 package io.github.kbuntrock;
 
+import java.util.Objects;
+
 /**
  * @author Kévin Buntrock
  */
-public class Poisson extends Entity {
+public class Poisson extends Entity implements Transferable<Poisson> {
 
 	boolean horsTerrain = true;
 
@@ -33,6 +35,25 @@ public class Poisson extends Entity {
 		currentMinY = absoluteMinY;
 		currentMaxY = absoluteMaxY;
 		setProchainePosition();
+	}
+
+	public Poisson(final int id, final Vecteur pos, final boolean horsTerrain, final double absoluteMinY,
+		final double absoluteMaxY,
+		final double currentMinY, final double currentMaxY, final double currentMinX, final double currentMaxX, final int couleur,
+		final int espece, final Vecteur vitesse,
+		final Vecteur prochainePosition) {
+		super(id, pos, EntityType.POISSON);
+		this.horsTerrain = horsTerrain;
+		this.absoluteMinY = absoluteMinY;
+		this.absoluteMaxY = absoluteMaxY;
+		this.currentMinY = currentMinY;
+		this.currentMaxY = currentMaxY;
+		this.currentMinX = currentMinX;
+		this.currentMaxX = currentMaxX;
+		this.couleur = couleur;
+		this.espece = espece;
+		this.vitesse = vitesse;
+		this.prochainePosition = prochainePosition;
 	}
 
 	public void resetCurrentMinMax() {
@@ -77,4 +98,50 @@ public class Poisson extends Entity {
 		vitesse = null;
 		horsTerrain = true;
 	}
+
+	public Poisson copy() {
+		return new Poisson(id, pos, horsTerrain, absoluteMinY, absoluteMaxY, currentMinY, currentMaxY, currentMinX, currentMaxX, couleur,
+			espece, vitesse, prochainePosition);
+	}
+
+	@Override
+	public boolean equals(final Object object) {
+		if(this == object) {
+			return true;
+		}
+		if(object == null || getClass() != object.getClass()) {
+			return false;
+		}
+		final Poisson poisson = (Poisson) object;
+		return horsTerrain == poisson.horsTerrain && Double.compare(absoluteMinY, poisson.absoluteMinY) == 0
+			&& Double.compare(absoluteMaxY, poisson.absoluteMaxY) == 0
+			&& Double.compare(currentMinY, poisson.currentMinY) == 0
+			&& Double.compare(currentMaxY, poisson.currentMaxY) == 0
+			&& Double.compare(currentMinX, poisson.currentMinX) == 0
+			&& Double.compare(currentMaxX, poisson.currentMaxX) == 0 && couleur == poisson.couleur && espece == poisson.espece
+			&& Objects.equals(vitesse, poisson.vitesse) && Objects.equals(prochainePosition, poisson.prochainePosition);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(horsTerrain, absoluteMinY, absoluteMaxY, currentMinY, currentMaxY, currentMinX, currentMaxX, couleur, espece,
+			vitesse, prochainePosition);
+	}
+
+	@Override
+	public String serialize() {
+		return "$P["
+			+ id
+			+ "||" + (pos == null ? "null" : pos.serialize())
+			+ "||" + horsTerrain
+			+ "||" + (int) absoluteMinY + "||" + (int) absoluteMaxY
+			+ "||" + (int) currentMinY + "||" + (int) currentMaxY
+			+ "||" + (int) currentMinX + "||" + (int) currentMaxX
+			+ "||" + couleur + "||" + espece
+			+ "||" + (vitesse == null ? "null" : vitesse.serialize())
+			+ "||" + (prochainePosition == null ? "null" : prochainePosition.serialize())
+			+ "]";
+	}
+
+
 }

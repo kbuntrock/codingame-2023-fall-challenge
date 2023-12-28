@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * @author Kévin Buntrock
  */
-public class Vecteur {
+public class Vecteur implements Transferable<Vecteur> {
 
 	public static final Vecteur ZERO = new Vecteur(0, 0);
 
@@ -148,6 +148,11 @@ public class Vecteur {
 	public String toAction() {
 		return BigDecimal.valueOf(x).setScale(0, RoundingMode.HALF_DOWN).intValue() + " " + BigDecimal.valueOf(y)
 			.setScale(0, RoundingMode.HALF_DOWN).intValue();
+	}
+
+	@Override
+	public String serialize() {
+		return "$V[" + (int) x + "|" + (int) y + "]";
 	}
 
 //	public Vecteur normalize() {
