@@ -1,7 +1,7 @@
 package io.github.kbuntrock;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Kévin Buntrock
@@ -15,7 +15,7 @@ public abstract class Robot extends Entity {
 
 	Action action;
 
-	Set<Integer> scans = new HashSet<>();
+	private final Map<Integer, Poisson> scans = new HashMap<>();
 
 	Robot(final EScanner in) {
 		super(in);
@@ -24,17 +24,12 @@ public abstract class Robot extends Entity {
 		battery = in.nextInt();
 	}
 
-	Direction directionEntity(final Entity entity) {
-		if(pos.x < entity.pos.x && pos.y < entity.pos.y) {
-			return Direction.BR;
-		} else if(pos.x < entity.pos.x && pos.y >= entity.pos.y) {
-			return Direction.TR;
-		} else if(pos.x >= entity.pos.x && pos.y < entity.pos.y) {
-			return Direction.BL;
-		} else if(pos.x >= entity.pos.x && pos.y >= entity.pos.y) {
-			return Direction.TL;
-		}
-		throw new RuntimeException("Direction non gérée");
+	public void addScan(final Poisson poisson) {
+		scans.put(poisson.id, poisson);
+	}
+
+	public Map<Integer, Poisson> getScans() {
+		return scans;
 	}
 
 	public boolean collide(final Monstre ugly, final Vecteur viseeInitiale) {

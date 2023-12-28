@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @author Kévin Buntrock
@@ -73,21 +72,8 @@ public class Radar {
 						p.currentMinY = Math.max(Math.max(p.currentMinY, ap.currentMinY - 200), p.absoluteMinY);
 					}
 				}
-
-				if(creatureId == 8) {
-					final boolean existe = ap != null;
-					IO.info("Ancien poisson 8 existe? " + (existe) + " : " + (existe ? (ap.currentMinX + ":" + ap.currentMaxX) : "empty"));
-					IO.info("Après correction p 8 : " + p.currentMinX + ":" + p.currentMaxX);
-				}
 			}
 
 		}
-	}
-
-	public List<Radio> filtered(final int droneId, final int espece) {
-		return radios.get(droneId).stream().filter(r -> r.poisson.espece == espece
-				&& !board.myTeam.savedScans.contains(r.poisson.id)
-				&& !board.myTeam.scans.contains(r.poisson.id))
-			.collect(Collectors.toList());
 	}
 }

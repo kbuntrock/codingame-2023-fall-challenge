@@ -8,9 +8,9 @@ import java.util.Map;
  */
 public class Board {
 
-	// Given at startup
-	final int width;
-	final int height;
+	// Score max : 96
+	// 48pts sans bonus et 48 de bonus
+	public static int INITIAL_WINNING_SCORE = 73;
 
 	// Updated each turn
 	final Team myTeam = new Team();
@@ -19,15 +19,7 @@ public class Board {
 	Map<Integer, Monstre> monstresById = new HashMap<>();
 	Radar radar = new Radar(this);
 
-	Board() {
-		width = 10000;
-		height = 10000;
-	}
-
 	Board(final EScanner in) {
-		width = 10000;
-		height = 10000;
-
 		initCreatures(in);
 	}
 
@@ -55,8 +47,8 @@ public class Board {
 		// Read new data
 		myTeam.readScore(in);
 		opponentTeam.readScore(in);
-		myTeam.readScans(in);
-		opponentTeam.readScans(in);
+		myTeam.readScans(in, this);
+		opponentTeam.readScans(in, this);
 		final int myDroneCount = in.nextInt();
 		myTeam.resetRobots();
 		for(int i = 0; i < myDroneCount; i++) {
@@ -76,11 +68,13 @@ public class Board {
 			final int droneId = in.nextInt();
 			final int creatureId = in.nextInt();
 			final Robot robot = myTeam.robotsById.get(droneId);
+			final Poisson poisson = poissonsById.get(creatureId);
 			if(robot != null) {
-				robot.scans.add(creatureId);
-				myTeam.scans.add(creatureId);
+				robot.addScan(poisson);
+				myTeam.addRobotScan(poisson);
 			} else {
-				opponentTeam.robotsById.get(droneId).scans.add(creatureId);
+				opponentTeam.robotsById.get(droneId).addScan(poisson);
+				opponentTeam.addRobotScan(poisson);
 			}
 
 		}
@@ -117,6 +111,32 @@ public class Board {
 						+ m.prochainePosition);
 			}
 		});
+	}
+
+	public int getWinningScore() {
+
+		int winningScore = INITIAL_WINNING_SCORE;
+		final boolean[] especeImpossible = {false, false, false};
+		final boolean[] couleurImpossible = {false, false, false, false};
+		for(final Poisson p : poissonsById.values()) {
+			if(p.horsTerrain && !opponentTeam.getSavedScans().containsKey(p.id) && !opponentTeam.getScans().containsKey(p.id)) {
+				winningScore -= (p.espece + 1);
+				especeImpossible[p.espece] = true;
+				couleurImpossible[p.couleur] = true;
+			}
+		}
+		for(int i = 0; i < especeImpossible.length; i++) {
+			if(especeImpossible[i]) {
+				winningScore -= 8;
+			}
+		}
+		for(int i = 0; i < couleurImpossible.length; i++) {
+			if(couleurImpossible[i]) {
+				winningScore -= 6;
+			}
+		}
+
+		return winningScore;
 	}
 
 	// TODO : à garder si on veut tenter de deviner la mise à jour de la direction d'un monstre via un autre drone

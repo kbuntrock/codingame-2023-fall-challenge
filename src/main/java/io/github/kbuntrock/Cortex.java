@@ -13,8 +13,6 @@ public class Cortex {
 
 	int profondeurSauvegarde = 500;
 
-	int[][] habitat = new int[][]{{2500, 5000}, {5000, 7500}, {7500, 10000}};
-
 	Board board;
 
 	int especeRecherchee[] = new int[]{2, 2};
@@ -40,14 +38,9 @@ public class Cortex {
 	public int trouverHabitatPlusProfondNonScanne() {
 		int habitatPlusProfond = -1;
 		for(final Poisson poisson : board.poissonsById.values().stream().filter(p -> !p.horsTerrain).collect(Collectors.toList())) {
-			boolean scanned = board.myTeam.savedScans.contains(poisson.id);
+			boolean scanned = board.myTeam.getSavedScans().keySet().contains(poisson.id);
 			if(!scanned) {
-				for(final Robot robot : board.myTeam.robots) {
-					scanned = robot.scans.contains(poisson.id);
-					if(scanned) {
-						break;
-					}
-				}
+				scanned = board.myTeam.getScans().keySet().contains(poisson.id);
 			}
 			if(!scanned && habitatPlusProfond < poisson.espece) {
 				habitatPlusProfond = poisson.espece;
@@ -57,6 +50,12 @@ public class Cortex {
 	}
 
 	public void explorerHabitat() {
+
+		final int scoreRbt1 = board.myTeam.hypotheticalScore(board.myTeam.robots.get(0).getScans().values(), board.opponentTeam);
+		final int scoreRbt2 = board.myTeam.hypotheticalScore(board.myTeam.robots.get(1).getScans().values(), board.opponentTeam);
+		final int scoreEquipe = board.myTeam.hypotheticalScore(board.myTeam.getScans().values(), board.opponentTeam);
+		final int scoreAdversaire = board.opponentTeam.hypotheticalScore(board.opponentTeam.getScans().values(), board.myTeam);
+		final int winningScore = board.getWinningScore();
 
 		for(int i = 0; i < 2; i++) {
 			final int fi = i;
@@ -98,36 +97,48 @@ public class Cortex {
 				// Exploration
 				peutChangerHabitat[i] = true;
 
-				final Poisson poissonATrouver = trouverPoissonPlusProche(robot, especeRecherchee[i], poissonSuivi[1 - i]);
+				final boolean light =
+					robot.battery >= 5 && (robot.pos.y > 2500) && (IO.turn == 4 || IO.turn == 7 || (IO.turn > 7 && IO.turn % 3 == 0));
 
-				final boolean light = IO.turn % 5 == 0 && IO.turn != 0;
-
-				poissonSuivi[i] = poissonATrouver;
-				if(poissonATrouver != null) {
-
-					final Vecteur vecteurVisee = new Vecteur(robot.pos, poissonATrouver.milieuRectangle()).adapt(600);
-					robot.action = Action.move(robot.pos.add(vecteurVisee), light);
-					robot.action.message = "P" + poissonATrouver.id + "-" + especeRecherchee[i];
-					IO.info("Poisson recherché pour robot " + robot.id + " : " + poissonATrouver.id);
-				} else {
-					// Remonter
+				if(scoreRbt1 > board.myTeam.score && scoreEquipe >= winningScore) {
+					// Remonter pour la victoire
 					robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), light);
-					robot.action.message = "Home";
+					robot.action.message = "Home FW";
+				} else {
+					final Poisson poissonATrouver = trouverPoissonPlusProche(robot, especeRecherchee[i], poissonSuivi[1 - i]);
+
+					poissonSuivi[i] = poissonATrouver;
+					if(poissonATrouver != null) {
+
+						final Vecteur vecteurVisee = new Vecteur(robot.pos, poissonATrouver.milieuRectangle()).adapt(600);
+						robot.action = Action.move(robot.pos.add(vecteurVisee), light);
+						robot.action.message = "P" + poissonATrouver.id + "-" + especeRecherchee[i];
+						IO.info("Poisson recherché pour robot " + robot.id + " : " + poissonATrouver.id);
+					} else {
+						// Remonter
+						robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), light);
+						robot.action.message = "Home";
+					}
 				}
+
 			}
 			esquiverMonstre(robot, robot.action.pos);
 
 		}
 
+		IO.info("Score robot 1 si remonte immédiatement : " + scoreRbt1);
+		IO.info("Score robot 2 si remonte immédiatement : " + scoreRbt2);
+		IO.info("Score équipe si remonte immédiatement : " + scoreEquipe);
+		IO.info("Score autre équipe si remonte immédiatement : " + scoreAdversaire);
+		IO.info("Winning score : " + winningScore);
 	}
 
 	private Poisson trouverPoissonPlusProche(final Robot robot, final int especeRecherchee, final Poisson exclusion) {
-		final Robot autreRobot = board.myTeam.getOtherRobot(robot);
 		// Trouve les poissons non encore scannés de l'espèce demandée
 		final List<Poisson> poissons = board.poissonsById.values().stream().filter(p ->
 				p.espece == especeRecherchee
 					&& !p.horsTerrain
-					&& !board.myTeam.savedScans.contains(p.id) && !robot.scans.contains(p.id) && !autreRobot.scans.contains(p.id)
+					&& !board.myTeam.getSavedScans().keySet().contains(p.id) && !board.myTeam.getScans().keySet().contains(p.id)
 					&& (exclusion == null || exclusion.id != p.id))
 			.collect(Collectors.toList());
 		if(poissons.isEmpty()) {

@@ -23,13 +23,6 @@ public class Player {
 			IO.incrementTurn();
 			in.resetCurrentBuffer();
 
-			final Poisson p8 = IO.lastTurnData.poissonById.get(8);
-			if(p8 != null) {
-				IO.info("P8 : " + p8.currentMinX + "-" + p8.currentMaxX);
-			} else {
-				IO.info("P8 non trouvé");
-			}
-
 			// Parse current state of the game
 			board.update(in);
 

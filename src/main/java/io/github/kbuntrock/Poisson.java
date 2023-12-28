@@ -1,7 +1,5 @@
 package io.github.kbuntrock;
 
-import java.util.Objects;
-
 /**
  * @author Kévin Buntrock
  */
@@ -102,30 +100,6 @@ public class Poisson extends Entity implements Transferable<Poisson> {
 	public Poisson copy() {
 		return new Poisson(id, pos, horsTerrain, absoluteMinY, absoluteMaxY, currentMinY, currentMaxY, currentMinX, currentMaxX, couleur,
 			espece, vitesse, prochainePosition);
-	}
-
-	@Override
-	public boolean equals(final Object object) {
-		if(this == object) {
-			return true;
-		}
-		if(object == null || getClass() != object.getClass()) {
-			return false;
-		}
-		final Poisson poisson = (Poisson) object;
-		return horsTerrain == poisson.horsTerrain && Double.compare(absoluteMinY, poisson.absoluteMinY) == 0
-			&& Double.compare(absoluteMaxY, poisson.absoluteMaxY) == 0
-			&& Double.compare(currentMinY, poisson.currentMinY) == 0
-			&& Double.compare(currentMaxY, poisson.currentMaxY) == 0
-			&& Double.compare(currentMinX, poisson.currentMinX) == 0
-			&& Double.compare(currentMaxX, poisson.currentMaxX) == 0 && couleur == poisson.couleur && espece == poisson.espece
-			&& Objects.equals(vitesse, poisson.vitesse) && Objects.equals(prochainePosition, poisson.prochainePosition);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(horsTerrain, absoluteMinY, absoluteMaxY, currentMinY, currentMaxY, currentMinX, currentMaxX, couleur, espece,
-			vitesse, prochainePosition);
 	}
 
 	@Override
