@@ -1,11 +1,16 @@
 package io.github.kbuntrock;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author Kévin Buntrock
  */
 public class IO {
 
 	static int turn = -1;
+
+	public static Map<Integer, Integer> lastTurnLightOn = new HashMap<>();
 
 	public static LastTurnData lastTurnData = new LastTurnData();
 

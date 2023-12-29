@@ -5,6 +5,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
+ * TODO Idées :
+ * - Trianguler avec la capture des robots adverses
+ * - Chasser les poissons hors de la carte
+ * - mieux utiliser le fait de compter les points pour remonter
+ * - mieux calculer quand allumer la lumière
+ * - trouver le prochain poisson à capturer pour un combo
+ *
  * @author Kévin Buntrock
  */
 public class Cortex {
@@ -46,6 +53,15 @@ public class Cortex {
 				habitatPlusProfond = poisson.espece;
 			}
 		}
+		if(habitatPlusProfond == -1) {
+			// On s'autorise à rechercher des poissons déjà scannés par l'autre robot, au cas ou ce dernier les relache
+			for(final Poisson poisson : board.poissonsById.values().stream().filter(p -> !p.horsTerrain).collect(Collectors.toList())) {
+				final boolean scanned = board.myTeam.getSavedScans().keySet().contains(poisson.id);
+				if(!scanned && habitatPlusProfond < poisson.espece) {
+					habitatPlusProfond = poisson.espece;
+				}
+			}
+		}
 		return habitatPlusProfond;
 	}
 
@@ -57,11 +73,14 @@ public class Cortex {
 		final int scoreAdversaire = board.opponentTeam.hypotheticalScore(board.opponentTeam.getScans().values(), board.myTeam);
 		final int winningScore = board.getWinningScore();
 
+		final List<Poisson> poissonsNonScannes = listPoissonsNonScannes();
+
 		for(int i = 0; i < 2; i++) {
 			final int fi = i;
 			final Robot robot = board.myTeam.robots.get(i);
 
 			if(robot.pos.y - profondeurSauvegarde < 0) {
+
 				if(!peutChangerHabitat[i]) {
 					// Descendre
 					final boolean light = IO.turn == 5 || IO.turn == 10;
@@ -97,15 +116,17 @@ public class Cortex {
 				// Exploration
 				peutChangerHabitat[i] = true;
 
-				final boolean light =
-					robot.battery >= 5 && (robot.pos.y > 2500) && (IO.turn == 4 || IO.turn == 7 || (IO.turn > 7 && IO.turn % 3 == 0));
+//				final boolean light =
+//					robot.battery >= 5 && (robot.pos.y > 2500) && (IO.turn == 4 || IO.turn == 7 || (IO.turn > 7 && IO.turn % 3 == 0));
+				final boolean light = turnLightOn(robot, poissonsNonScannes);
 
-				if(scoreRbt1 > board.myTeam.score && scoreEquipe >= winningScore) {
+				if((i == 0 ? (scoreRbt1 > board.myTeam.score) : (scoreRbt2 > board.myTeam.score)) && scoreEquipe >= winningScore) {
 					// Remonter pour la victoire
 					robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), light);
 					robot.action.message = "Home FW";
 				} else {
-					final Poisson poissonATrouver = trouverPoissonPlusProche(robot, especeRecherchee[i], poissonSuivi[1 - i]);
+					final Poisson poissonATrouver = trouverPoissonPlusProche(robot, especeRecherchee[i], poissonSuivi[1 - i],
+						poissonsNonScannes);
 
 					poissonSuivi[i] = poissonATrouver;
 					if(poissonATrouver != null) {
@@ -133,13 +154,18 @@ public class Cortex {
 		IO.info("Winning score : " + winningScore);
 	}
 
-	private Poisson trouverPoissonPlusProche(final Robot robot, final int especeRecherchee, final Poisson exclusion) {
+	private List<Poisson> listPoissonsNonScannes() {
+		return board.poissonsById.values().stream().filter(p ->
+				!p.horsTerrain
+					&& !board.myTeam.getSavedScans().keySet().contains(p.id) && !board.myTeam.getScans().keySet().contains(p.id))
+			.collect(Collectors.toList());
+	}
+
+	private Poisson trouverPoissonPlusProche(final Robot robot, final int especeRecherchee, final Poisson exclusion,
+		final List<Poisson> poissonsNonScannes) {
 		// Trouve les poissons non encore scannés de l'espèce demandée
-		final List<Poisson> poissons = board.poissonsById.values().stream().filter(p ->
-				p.espece == especeRecherchee
-					&& !p.horsTerrain
-					&& !board.myTeam.getSavedScans().keySet().contains(p.id) && !board.myTeam.getScans().keySet().contains(p.id)
-					&& (exclusion == null || exclusion.id != p.id))
+		final List<Poisson> poissons = poissonsNonScannes.stream().filter(p ->
+				p.espece == especeRecherchee && (exclusion == null || exclusion.id != p.id))
 			.collect(Collectors.toList());
 		if(poissons.isEmpty()) {
 			return null;
@@ -219,6 +245,22 @@ public class Cortex {
 		}
 		// On a un potentiel gagnant qu'on remonte
 		return newVisee;
+	}
+
+	private boolean turnLightOn(final Robot robot, final List<Poisson> poissonsNonScannes) {
+
+		if(robot.battery < 5 || IO.lastTurnLightOn.getOrDefault(robot.id, -1) == IO.turn - 1) {
+			return false;
+		}
+
+		for(final Poisson p : poissonsNonScannes) {
+			final double distance = robot.pos.intDistance(p.milieuRectangle());
+			if(distance >= 500 && distance <= 2500) {
+				IO.info("robot " + robot.id + " turn light on for fish " + p.id);
+				return true;
+			}
+		}
+		return false;
 	}
 
 

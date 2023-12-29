@@ -35,6 +35,9 @@ public class Player {
 
 			// Send your actions for this turn
 			for(final Robot robot : board.myTeam.robots) {
+				if(robot.action.light) {
+					IO.lastTurnLightOn.put(robot.id, IO.turn);
+				}
 				System.out.println(robot.action);
 			}
 		}
