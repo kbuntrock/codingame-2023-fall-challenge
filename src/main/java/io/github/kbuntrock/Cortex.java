@@ -12,6 +12,8 @@ import java.util.stream.Collectors;
  * - mieux calculer quand allumer la lumière
  * - trouver le prochain poisson à capturer pour un combo
  *
+ * - N'imposer la chasse que d'un seul poisson d'expèce 2 par robot.
+ *
  * @author Kévin Buntrock
  */
 public class Cortex {
@@ -26,7 +28,7 @@ public class Cortex {
 
 	final Poisson[] poissonSuivi = new Poisson[]{null, null};
 
-	final boolean[] peutChangerHabitat = new boolean[]{false, false};
+	final boolean[] bloqueRetour = new boolean[]{false, false};
 
 	static {
 		anglesATester.add(0);
@@ -76,84 +78,61 @@ public class Cortex {
 		final List<Poisson> poissonsNonScannes = listPoissonsNonScannes();
 
 		for(int i = 0; i < 2; i++) {
-			final int fi = i;
 			final Robot robot = board.myTeam.robots.get(i);
 
-			// Avant toute chose, on regarde si on peut chasser un poisson
-			final Poisson poissonAChasser = poissonAChasser(robot);
-			if(poissonAChasser != null) {
-				IO.info(robot.id + " -> Poisson " + poissonAChasser.id + " pris en chasse ");
-				final Vecteur vecteurVisee = new Vecteur(robot.pos, poissonAChasser.milieuRectangle()).adapt(600);
-				final boolean light = turnLightOn(robot, poissonsNonScannes);
-				robot.action = Action.move(robot.pos.add(vecteurVisee), light);
-				robot.action.message = "zook zook " + poissonAChasser.id;
-				continue;
-			}
-
-			if(robot.pos.y - profondeurSauvegarde < 0) {
-
-				if(!peutChangerHabitat[i]) {
-					// Descendre
-					final boolean light = IO.turn == 5 || IO.turn == 10;
-					robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y + 600), light);
-					robot.action.message = "Going down for " + especeRecherchee[i];
-				} else {
-
-					if(robot.pos.y < 500) {
-						// Changement d'habitat forcé
-						// on vérifie si on a bien tout exploré (on a possiblement lâché des scans)
-						final int habitatRestant = trouverHabitatPlusProfondNonScanne();
-						if(habitatRestant >= 0) {
-							especeRecherchee[i] = habitatRestant;
-							peutChangerHabitat[i] = false;
-							robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y + 600), false);
-							robot.action.message = "Re-going down for " + especeRecherchee[i];
-							continue;
-						}
-					}
-					// Remonter
-					robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), false);
-					robot.action.message = "Going up";
-					// On change d'espèce pour notre prochaine plongée
-					if(peutChangerHabitat[i] && especeRecherchee[i] > 0) {
-						especeRecherchee[i]--;
-						peutChangerHabitat[i] = false;
-						robot.action.message = "pro espece : " + especeRecherchee[i];
-
-					}
-
-				}
-			} else {
-				// Exploration
-				peutChangerHabitat[i] = true;
-
-//				final boolean light =
+			//				final boolean light =
 //					robot.battery >= 5 && (robot.pos.y > 2500) && (IO.turn == 4 || IO.turn == 7 || (IO.turn > 7 && IO.turn % 3 == 0));
-				final boolean light = turnLightOn(robot, poissonsNonScannes);
+			final boolean light = turnLightOn(robot, poissonsNonScannes);
 
-				if((i == 0 ? (scoreRbt1 > board.myTeam.score) : (scoreRbt2 > board.myTeam.score)) && scoreEquipe >= winningScore) {
-					// Remonter pour la victoire
-					robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), light);
-					robot.action.message = "Home FW";
-				} else {
-					final Poisson poissonATrouver = trouverPoissonPlusProche(robot, especeRecherchee[i], poissonSuivi[1 - i],
-						poissonsNonScannes);
+			// Exploration
+			if((i == 0 ? (scoreRbt1 > board.myTeam.score) : (scoreRbt2 > board.myTeam.score)) && (scoreEquipe >= winningScore
+				|| scoreAdversaire >= winningScore)) { //&& tousPoissonsEspeceScannes(2)
+				// Remonter pour la victoire
+				robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), light);
+				robot.action.message = "Home FW";
+				bloqueRetour[i] = true;
+			} else {
 
-					poissonSuivi[i] = poissonATrouver;
-					if(poissonATrouver != null) {
-
-						final Vecteur vecteurVisee = new Vecteur(robot.pos, poissonATrouver.milieuRectangle()).adapt(600);
-						robot.action = Action.move(robot.pos.add(vecteurVisee), light);
-						robot.action.message = "P" + poissonATrouver.id + "-" + especeRecherchee[i];
-						IO.info("Poisson recherché pour robot " + robot.id + " : " + poissonATrouver.id);
-					} else {
+				if(bloqueRetour[i]) {
+					if(i == 0 ? (scoreRbt1 > board.myTeam.score) : (scoreRbt2 > board.myTeam.score)) {
 						// Remonter
 						robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), light);
-						robot.action.message = "Home";
+						robot.action.message = "Home B";
+					} else {
+						bloqueRetour[i] = false;
+						// On débloque les autres expèces
+						especeRecherchee[i] = 0;
 					}
 				}
+				if(!bloqueRetour[i]) {
+					// Avant toute chose, on regarde si on peut chasser un poisson
+					final Poisson poissonAChasser = poissonAChasser(robot);
+					if(poissonAChasser != null) {
+						IO.info(robot.id + " -> Poisson " + poissonAChasser.id + " pris en chasse ");
+						final Vecteur vecteurVisee = new Vecteur(robot.pos, poissonAChasser.milieuRectangle()).adapt(600);
+						robot.action = Action.move(robot.pos.add(vecteurVisee), light);
+						robot.action.message = "zook zook " + poissonAChasser.id;
+					} else {
+						final Poisson poissonATrouver = trouverPoissonPlusProche(robot, especeRecherchee[i], poissonSuivi[1 - i],
+							poissonsNonScannes);
 
+						poissonSuivi[i] = poissonATrouver;
+						if(poissonATrouver != null) {
+
+							final Vecteur vecteurVisee = new Vecteur(robot.pos, poissonATrouver.milieuRectangle()).adapt(600);
+							robot.action = Action.move(robot.pos.add(vecteurVisee), light);
+							robot.action.message = "P" + poissonATrouver.id + "-" + especeRecherchee[i];
+							IO.info("Poisson recherché pour robot " + robot.id + " : " + poissonATrouver.id);
+						} else {
+							// Remonter
+							robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), light);
+							robot.action.message = "Home";
+							bloqueRetour[i] = true;
+						}
+					}
+				}
 			}
+
 			esquiverMonstre(robot, robot.action.pos);
 
 		}
@@ -165,6 +144,12 @@ public class Cortex {
 		IO.info("Winning score : " + winningScore);
 	}
 
+	private boolean tousPoissonsEspeceScannes(final int espece) {
+		long compteur = board.myTeam.getSavedScans().values().stream().filter(p -> p.espece == espece).count();
+		compteur += board.myTeam.getScans().values().stream().filter(p -> p.espece == espece).count();
+		return compteur == 4;
+	}
+
 	private List<Poisson> listPoissonsNonScannes() {
 		return board.poissonsById.values().stream().filter(p ->
 				!p.horsTerrain
@@ -172,11 +157,12 @@ public class Cortex {
 			.collect(Collectors.toList());
 	}
 
-	private Poisson trouverPoissonPlusProche(final Robot robot, final int especeRecherchee, final Poisson exclusion,
+	private Poisson trouverPoissonPlusProche(final Robot robot, final int especeRechercheeMin, final Poisson exclusion,
 		final List<Poisson> listPoissons) {
+		IO.info("Espece recherche min pour robot " + especeRechercheeMin + " -> " + robot.id);
 		// Trouve les poissons non encore scannés de l'espèce demandée
 		final List<Poisson> poissons = listPoissons.stream().filter(p ->
-				(especeRecherchee == -1 || p.espece == especeRecherchee) && (exclusion == null || exclusion.id != p.id))
+				(especeRechercheeMin == -1 || especeRechercheeMin <= p.espece) && (exclusion == null || exclusion.id != p.id))
 			.collect(Collectors.toList());
 		if(poissons.isEmpty()) {
 			return null;
@@ -279,7 +265,10 @@ public class Cortex {
 		final List<Robot> robotsEnnemis = board.opponentTeam.robots;
 		final List<Poisson> poissonsChasseables = new ArrayList<>();
 
-		for(final Poisson p : board.poissonsById.values()) {
+		for(final Poisson p : board.poissonsById.values().stream().filter(p ->
+				!board.opponentTeam.getSavedScans().containsKey(p.id) && !board.opponentTeam.getScans().containsKey(p.id)).
+			collect(Collectors.toList())) {
+
 			final boolean poissonAGauche = p.currentMaxX < robot.pos.x;
 			final boolean poissonADroite = p.currentMinX > robot.pos.x;
 			if(!poissonAGauche && !poissonADroite) {
@@ -292,15 +281,13 @@ public class Cortex {
 				robotsEnnemis.stream().filter(re -> poissonAGauche ? re.pos.x <= robot.pos.x : re.pos.x >= robot.pos.x).count() == 0;
 			if(poissonChasseable) {
 				// Déterminer si poisson dans un rectangle délimitant la zone de chasse
-				final Rectangle zoneDeChasse = poissonAGauche ?
-					new Rectangle(new Vecteur(0, robot.pos.y - 2000),
-						new Vecteur(robot.pos.x, robot.pos.y - 2000),
-						new Vecteur(robot.pos.x, robot.pos.y + 2000),
+				final Triangle zoneDeChasse = poissonAGauche ?
+					new Triangle(new Vecteur(0, robot.pos.y - 1000),
+						new Vecteur(robot.pos.x, robot.pos.y),
 						new Vecteur(0, robot.pos.y + 2000)) :
-					new Rectangle(new Vecteur(robot.pos.x, robot.pos.y - 2000),
-						new Vecteur(10000, robot.pos.y - 2000),
-						new Vecteur(10000, robot.pos.y + 2000),
-						new Vecteur(robot.pos.x, robot.pos.y + 2000));
+					new Triangle(new Vecteur(10000, robot.pos.y - 2000),
+						new Vecteur(robot.pos.x, robot.pos.y),
+						new Vecteur(10000, robot.pos.y + 2000));
 				poissonChasseable = zoneDeChasse.poissonInside(p);
 				IO.info(
 					robot.id + " -> Poisson " + p.id + "(" + p.pos + ") chassable pour zone : " + zoneDeChasse + " ? " + poissonChasseable);
