@@ -32,6 +32,16 @@ public class Radar {
 			if(p != null) {
 				// On peut être en présence du scan d'un monstre. Non géré pour l'instant
 				p.horsTerrain = false;
+
+				if(p.pos != null) {
+					// Le poisson est visible, on règle les valeurs en conséquence
+					p.currentMinX = p.pos.x;
+					p.currentMaxX = p.pos.x;
+					p.currentMinY = p.pos.y;
+					p.currentMaxY = p.pos.y;
+					continue;
+				}
+
 				// "Ancien" poisson (précédente version de ses coordonnées)
 				final Poisson ap = IO.lastTurnData.poissonById.get(creatureId);
 
