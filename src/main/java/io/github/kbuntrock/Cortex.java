@@ -86,7 +86,7 @@ public class Cortex {
 
 			// Exploration
 			if((i == 0 ? (scoreRbt1 > board.myTeam.score) : (scoreRbt2 > board.myTeam.score)) && (scoreEquipe >= winningScore
-				|| scoreAdversaire >= winningScore)) { //&& tousPoissonsEspeceScannes(2)
+				|| (!board.opponentTeam.getScans().isEmpty() && scoreAdversaire >= winningScore))) { //&& tousPoissonsEspeceScannes(2)
 				// Remonter pour la victoire
 				robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), light);
 				robot.action.message = "Home FW";
