@@ -84,6 +84,19 @@ public class Cortex {
 //					robot.battery >= 5 && (robot.pos.y > 2500) && (IO.turn == 4 || IO.turn == 7 || (IO.turn > 7 && IO.turn % 3 == 0));
 			final boolean light = turnLightOn(robot, poissonsNonScannes);
 
+			if(IO.turn < 3) {
+				// Descente controlée pour le robot excentré
+				if(robot.pos.x > 5000 && robot.pos.x < 7900) {
+					robot.action = Action.move(robot.pos.add(new Vecteur(2, 5).adapt(600)), light);
+					robot.action.message = "Down ctrld";
+					continue;
+				} else if(robot.pos.x < 5000 && robot.pos.x > 2100) {
+					robot.action = Action.move(robot.pos.add(new Vecteur(-2, 5).adapt(600)), light);
+					robot.action.message = "Down ctrlg";
+					continue;
+				}
+			}
+
 			// Exploration
 			if((i == 0 ? (scoreRbt1 > board.myTeam.score) : (scoreRbt2 > board.myTeam.score)) && (scoreEquipe >= winningScore
 				|| (!board.opponentTeam.getScans().isEmpty() && scoreAdversaire >= winningScore))) { //&& tousPoissonsEspeceScannes(2)
@@ -91,6 +104,9 @@ public class Cortex {
 				robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), light);
 				robot.action.message = "Home FW";
 				bloqueRetour[i] = true;
+				if(!board.opponentTeam.getScans().isEmpty() && scoreAdversaire >= winningScore) {
+					robot.action.message = "Home FWE";
+				}
 			} else {
 
 				if(bloqueRetour[i]) {
@@ -276,7 +292,7 @@ public class Cortex {
 				// On ne fait rien dans le cas très particulier où on est sur la même ligne
 				continue;
 			}
-			// Pas de robot ennemi entre notre robot et le bord où chasser le poisson
+			boolean poissonChasseable = poissonAGauche ? p.currentMaxX < 2000 : p.currentMinY > 8000;
 			final Rectangle zoneDeChasseRectangle = poissonAGauche ?
 				new Rectangle(new Vecteur(0, robot.pos.y - 2000),
 					new Vecteur(robot.pos.x, robot.pos.y - 2000),
@@ -286,11 +302,15 @@ public class Cortex {
 					new Vecteur(10000, robot.pos.y - 2000),
 					new Vecteur(10000, robot.pos.y + 2000),
 					new Vecteur(robot.pos.x, robot.pos.y + 2000));
-			boolean poissonChasseable =
-				robotsEnnemis.stream().filter(re -> zoneDeChasseRectangle.pointInside(re.pos)).count() == 0;
-			IO.info(
-				robot.id + " -> Poisson " + p.id + " (" + p.pos + ") chassable ? " + poissonChasseable + " car zone sans ennemie : "
-					+ zoneDeChasseRectangle);
+			if(poissonChasseable) {
+				// Pas de robot ennemi entre notre robot et le bord où chasser le poisson
+				poissonChasseable =
+					robotsEnnemis.stream().filter(re -> zoneDeChasseRectangle.pointInside(re.pos)).count() == 0;
+			}
+
+//			IO.info(
+//				robot.id + " -> Poisson " + p.id + " (" + p.pos + ") chassable ? " + poissonChasseable + " car zone sans ennemie : "
+//					+ zoneDeChasseRectangle);
 			if(poissonChasseable) {
 				poissonChasseable = zoneDeChasseRectangle.poissonInside(p);
 			}
