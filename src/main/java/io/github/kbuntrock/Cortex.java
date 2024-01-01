@@ -137,8 +137,12 @@ public class Cortex {
 //						robot.action = Action.move(robot.pos.add(vecteurVisee), light);
 //						robot.action.message = "zook zook " + poissonAChasser.id;
 					} else {
-						final Poisson poissonATrouver = trouverPoissonPlusProche(robot, especeRecherchee[i], poissonSuivi[1 - i],
+						Poisson poissonATrouver = trouverPoissonPlusProche(robot, especeRecherchee[i], poissonSuivi[1 - i],
 							poissonsNonScannes);
+						if(poissonATrouver == null) {
+							poissonATrouver = trouverPoissonPlusProche(robot, especeRecherchee[i], null,
+								poissonsNonScannes);
+						}
 
 						poissonSuivi[i] = poissonATrouver;
 						if(poissonATrouver != null) {
