@@ -109,9 +109,10 @@ public class Cortex {
 					final Poisson poissonAChasser = poissonAChasser(robot);
 					if(poissonAChasser != null) {
 						IO.info(robot.id + " -> Poisson " + poissonAChasser.id + " pris en chasse ");
-						final Vecteur vecteurVisee = new Vecteur(robot.pos, poissonAChasser.milieuRectangle()).adapt(600);
-						robot.action = Action.move(robot.pos.add(vecteurVisee), light);
-						robot.action.message = "zook zook " + poissonAChasser.id;
+						chasserPoisson(robot, poissonAChasser, light);
+//						final Vecteur vecteurVisee = new Vecteur(robot.pos, poissonAChasser.milieuRectangle()).adapt(600);
+//						robot.action = Action.move(robot.pos.add(vecteurVisee), light);
+//						robot.action.message = "zook zook " + poissonAChasser.id;
 					} else {
 						final Poisson poissonATrouver = trouverPoissonPlusProche(robot, especeRecherchee[i], poissonSuivi[1 - i],
 							poissonsNonScannes);
@@ -269,34 +270,51 @@ public class Cortex {
 				!board.opponentTeam.getSavedScans().containsKey(p.id) && !board.opponentTeam.getScans().containsKey(p.id)).
 			collect(Collectors.toList())) {
 
-			final boolean poissonAGauche = p.currentMaxX < robot.pos.x;
-			final boolean poissonADroite = p.currentMinX > robot.pos.x;
+			final boolean poissonAGauche = p.currentMaxX <= robot.pos.x;
+			final boolean poissonADroite = robot.pos.x <= p.currentMinX;
 			if(!poissonAGauche && !poissonADroite) {
 				// On ne fait rien dans le cas très particulier où on est sur la même ligne
 				continue;
 			}
 			// Pas de robot ennemi entre notre robot et le bord où chasser le poisson
-			// TODO : assouplir en effectuant une vérification en y pour rendre l'algo plus efficasse
+			final Rectangle zoneDeChasseRectangle = poissonAGauche ?
+				new Rectangle(new Vecteur(0, robot.pos.y - 2000),
+					new Vecteur(robot.pos.x, robot.pos.y - 2000),
+					new Vecteur(robot.pos.x, robot.pos.y + 2000),
+					new Vecteur(0, robot.pos.y + 2000)) :
+				new Rectangle(new Vecteur(robot.pos.x, robot.pos.y - 2000),
+					new Vecteur(10000, robot.pos.y - 2000),
+					new Vecteur(10000, robot.pos.y + 2000),
+					new Vecteur(robot.pos.x, robot.pos.y + 2000));
 			boolean poissonChasseable =
-				robotsEnnemis.stream().filter(re -> poissonAGauche ? re.pos.x <= robot.pos.x : re.pos.x >= robot.pos.x).count() == 0;
+				robotsEnnemis.stream().filter(re -> zoneDeChasseRectangle.pointInside(re.pos)).count() == 0;
+			IO.info(
+				robot.id + " -> Poisson " + p.id + " (" + p.pos + ") chassable ? " + poissonChasseable + " car zone sans ennemie : "
+					+ zoneDeChasseRectangle);
+			if(poissonChasseable) {
+				poissonChasseable = zoneDeChasseRectangle.poissonInside(p);
+			}
 			if(poissonChasseable) {
 				// Déterminer si poisson dans un rectangle délimitant la zone de chasse
-				final Triangle zoneDeChasse = poissonAGauche ?
+				final Triangle zoneDeChasseTriangle = poissonAGauche ?
 					new Triangle(new Vecteur(0, robot.pos.y - 1000),
 						new Vecteur(robot.pos.x, robot.pos.y),
-						new Vecteur(0, robot.pos.y + 2000)) :
-					new Triangle(new Vecteur(10000, robot.pos.y - 2000),
+						new Vecteur(0, robot.pos.y + 1000)) :
+					new Triangle(new Vecteur(10000, robot.pos.y - 1000),
 						new Vecteur(robot.pos.x, robot.pos.y),
-						new Vecteur(10000, robot.pos.y + 2000));
-				poissonChasseable = zoneDeChasse.poissonInside(p);
+						new Vecteur(10000, robot.pos.y + 1000));
+				poissonChasseable = zoneDeChasseTriangle.poissonInside(p);
 				IO.info(
-					robot.id + " -> Poisson " + p.id + "(" + p.pos + ") chassable pour zone : " + zoneDeChasse + " ? " + poissonChasseable);
+					robot.id + " -> Poisson " + p.id + " (" + p.pos + ") chassable ? " + poissonChasseable + " pour zone : "
+						+ zoneDeChasseTriangle);
 
 			}
 			if(poissonChasseable) {
 				// Pas de robot ennemi à moins de "x" de la zone du poisson
+				final boolean localisationPrecise = p.pos != null;
 				poissonChasseable =
-					robotsEnnemis.stream().filter(re -> re.pos.intDistance(p.milieuRectangle()) < 2000).count() == 0;
+					robotsEnnemis.stream().filter(re -> re.pos.intDistance(p.milieuRectangle()) < (localisationPrecise ? 2000 : 1000))
+						.count() == 0;
 				IO.info(robot.id + " -> Poisson " + p.id + " chassable après repérage ennemis? " + poissonChasseable);
 			}
 			if(poissonChasseable) {
@@ -308,6 +326,24 @@ public class Cortex {
 		} else {
 			return trouverPoissonPlusProche(robot, -1, null, poissonsChasseables);
 		}
+	}
+
+	public void chasserPoisson(final Robot robot, final Poisson poisson, final boolean light) {
+		boolean gauche = false;
+		Vecteur localisation = poisson.pos;
+
+		if(localisation == null) {
+			localisation = poisson.milieuRectangle();
+		}
+		if(localisation.x - 5000 < 0) {
+			gauche = true;
+		}
+		final Vecteur visee = new Vecteur(robot.pos, new Vecteur(localisation.x + (gauche ? 300 : -300), localisation.y)).adapt(600);
+		robot.action = Action.move(robot.pos.add(visee), light);
+		robot.action.message = "zou p" + poisson.id;
+
+//		final Vecteur vecteurVisee = new Vecteur(robot.pos, poissonAChasser.milieuRectangle()).adapt(600);
+//						robot.action = Action.move(robot.pos.add(vecteurVisee), light);
 	}
 
 

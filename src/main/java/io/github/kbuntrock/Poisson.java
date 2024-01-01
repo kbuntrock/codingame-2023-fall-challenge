@@ -69,6 +69,10 @@ public class Poisson extends Entity implements Transferable<Poisson> {
 
 	void setPosition(final EScanner in) {
 		pos = new Vecteur(in);
+		currentMinX = pos.x;
+		currentMaxX = pos.x;
+		currentMinY = pos.y;
+		currentMaxY = pos.y;
 	}
 
 	void setVitesse(final EScanner in) {

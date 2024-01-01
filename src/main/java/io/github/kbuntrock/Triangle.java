@@ -16,14 +16,7 @@ public class Triangle {
 	}
 
 	public boolean poissonInside(final Poisson p) {
-		if(p.pos != null) {
-			return pointInside(p.pos);
-		}
-		boolean inside = pointInside(new Vecteur(p.currentMinX, p.currentMinY));
-		inside = inside && pointInside(new Vecteur(p.currentMaxX, p.currentMinY));
-		inside = inside && pointInside(new Vecteur(p.currentMaxX, p.currentMaxY));
-		inside = inside && pointInside(new Vecteur(p.currentMinX, p.currentMaxY));
-		return inside;
+		return pointInside(p.milieuRectangle());
 	}
 
 	/**
@@ -46,8 +39,8 @@ public class Triangle {
 	}
 
 	private double aireTriangle() {
-		final var det = ((p1.x - p3.x) * (p2.y - p3.y)) - ((p2.x - p3.x) * (p1.y - p3.y));
-		return (det / 2.0d);
+		final var det = (p1.x * (p2.y - p3.y)) + (p2.x * (p3.y - p1.y) + (p3.x * (p1.y - p2.y)));
+		return Math.abs(det / 2.0d);
 	}
 
 	@Override
