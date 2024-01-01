@@ -79,6 +79,13 @@ public class Cortex {
 
 		for(int i = 0; i < 2; i++) {
 			final Robot robot = board.myTeam.robots.get(i);
+			poissonSuivi[i] = null;
+
+			if(robot.emergency == 1) {
+				robot.action = Action.none();
+				robot.action.message = "Crisis";
+				continue;
+			}
 
 			//				final boolean light =
 //					robot.battery >= 5 && (robot.pos.y > 2500) && (IO.turn == 4 || IO.turn == 7 || (IO.turn > 7 && IO.turn % 3 == 0));
@@ -98,8 +105,8 @@ public class Cortex {
 			}
 
 			// Exploration
-			if((i == 0 ? (scoreRbt1 > board.myTeam.score) : (scoreRbt2 > board.myTeam.score)) && (scoreEquipe >= winningScore
-				|| (!board.opponentTeam.getScans().isEmpty() && scoreAdversaire >= winningScore))) { //&& tousPoissonsEspeceScannes(2)
+			if((i == 0 ? (scoreRbt1 > board.myTeam.score) : (scoreRbt2 > board.myTeam.score)) &&
+				(scoreEquipe >= winningScore || (!board.opponentTeam.getScans().isEmpty() && scoreAdversaire >= winningScore))) {
 				// Remonter pour la victoire
 				robot.action = Action.move(new Vecteur(robot.pos.x, robot.pos.y - 600), light);
 				robot.action.message = "Home FW";
