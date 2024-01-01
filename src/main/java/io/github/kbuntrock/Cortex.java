@@ -292,7 +292,7 @@ public class Cortex {
 				// On ne fait rien dans le cas très particulier où on est sur la même ligne
 				continue;
 			}
-			boolean poissonChasseable = poissonAGauche ? p.currentMaxX < 2000 : p.currentMinY > 8000;
+			boolean poissonChasseable = poissonAGauche ? p.currentMaxX < 2000 : p.currentMinX > 8000;
 			final Rectangle zoneDeChasseRectangle = poissonAGauche ?
 				new Rectangle(new Vecteur(0, robot.pos.y - 2000),
 					new Vecteur(robot.pos.x, robot.pos.y - 2000),
